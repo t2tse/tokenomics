@@ -11,4 +11,4 @@ The website should have the following functionality:
         8. Use dummy data for events and speakers, come up with a schedule, the event is about Google Cloud Technologies.
         9. Tech Stack: Python and Flask framework on server side. Front-end is basic HTML, CSS and JavaScript. 
         10. Test out the site on your own for all functionality and provide a detailed README on how to setup, run and make any further changes. 
-11. Launch the web application for me to review. 
+        11. Launch the web application for me to review. 
