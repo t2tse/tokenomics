@@ -1,0 +1,41 @@
+{
+  "defaults": {
+    "baseUrl": "http://localhost:4000",
+    "delay": 3000
+  },
+  "runs": [
+    {
+      "case": "code-review",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "legacy-modernization",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-bug-fix",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-pro"
+    },
+    {
+      "case": "zero-to-one-spec-driven",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "zero-to-one-vibe-coding",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    }
+  ]
+}

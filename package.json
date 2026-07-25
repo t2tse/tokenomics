@@ -1,0 +1,17 @@
+{
+  "name": "tokenomics-test-harness",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Test harness for evaluating LiteLLM performance and cost on software development tasks",
+  "main": "./src/main.js",
+  "bin": {
+    "tokenomics": "./bin/tokenomics"
+  },
+  "scripts": {
+    "build": "esbuild src/main.js --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --footer:js=\"main().catch(err => { console.error(err); process.exit(1); });\" --outfile=bin/tokenomics && chmod +x bin/tokenomics",
+    "test:unit": "node --test test/*.test.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.1"
+  }
+}
