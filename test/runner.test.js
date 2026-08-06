@@ -130,6 +130,193 @@ describe('runner & case discovery', () => {
       fs.rmSync(tmpParent, { recursive: true, force: true });
     }
   });
+
+  it('should append WALKTHROUGH_PROMPT to prompts in headless simple mode', async () => {
+    const fs = await import('fs');
+    const os = await import('os');
+    const { runTestCase, WALKTHROUGH_PROMPT } = await import('../src/runner.js');
+    const { registerAgent } = await import('../src/agents/agent.js');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url.includes('/user/new')) {
+        return { ok: true, json: async () => ({ user_id: 'test-user-id', key: 'sk-12345678901234' }) };
+      }
+      if (url.includes('/key/generate')) {
+        return { ok: true, json: async () => ({ key: 'sk-virtual-key' }) };
+      }
+      if (url.includes('/user/info')) {
+        return { ok: true, json: async () => ({ user_info: { spend: 0 } }) };
+      }
+      return { ok: true, json: async () => ({ metadata: {} }) };
+    };
+
+    const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'tokenomics-test-headless-mode-'));
+    const useCasesDir = path.join(tmpParent, 'use-cases');
+    const caseDir = path.join(useCasesDir, 'headless-case');
+    fs.mkdirSync(caseDir, { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'PROMPT.md'), 'Build a web dashboard.');
+
+    let capturedPrompts = [];
+    registerAgent('mock-headless-agent', (params) => {
+      capturedPrompts.push(params.promptText);
+      return {
+        command: 'node',
+        args: ['-e', 'process.exit(0);'],
+        env: process.env,
+        displayCmd: 'node headless test',
+        interactive: false,
+      };
+    });
+
+    try {
+      const options = {
+        agent: 'mock-headless-agent',
+        mode: 'simple',
+        interactive: false,
+        model: 'claude-sonnet',
+        baseUrl: 'http://localhost:4000',
+        masterKey: 'sk-test',
+        delay: 0,
+      };
+
+      const result = await runTestCase('headless-case', options, tmpParent);
+      assert.equal(result.success, true);
+      assert.equal(capturedPrompts.length, 1);
+      assert.ok(capturedPrompts[0].startsWith('Build a web dashboard.'));
+      assert.ok(capturedPrompts[0].includes(WALKTHROUGH_PROMPT));
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(tmpParent, { recursive: true, force: true });
+    }
+  });
+
+  it('should append WALKTHROUGH_PROMPT only in the execution phase for plan-execute mode', async () => {
+    const fs = await import('fs');
+    const os = await import('os');
+    const { runTestCase, WALKTHROUGH_PROMPT } = await import('../src/runner.js');
+    const { registerAgent } = await import('../src/agents/agent.js');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url.includes('/user/new')) {
+        return { ok: true, json: async () => ({ user_id: 'test-user-id', key: 'sk-12345678901234' }) };
+      }
+      if (url.includes('/key/generate')) {
+        return { ok: true, json: async () => ({ key: 'sk-virtual-key' }) };
+      }
+      if (url.includes('/user/info')) {
+        return { ok: true, json: async () => ({ user_info: { spend: 0 } }) };
+      }
+      return { ok: true, json: async () => ({ metadata: {} }) };
+    };
+
+    const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'tokenomics-test-plan-exec-mode-'));
+    const useCasesDir = path.join(tmpParent, 'use-cases');
+    const caseDir = path.join(useCasesDir, 'plan-exec-case');
+    fs.mkdirSync(caseDir, { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'PROMPT-PLAN.md'), 'Plan the architecture.');
+    fs.writeFileSync(path.join(caseDir, 'PROMPT-EXEC.md'), 'Execute implementation.');
+
+    let capturedPrompts = [];
+    registerAgent('mock-plan-exec-agent', (params) => {
+      capturedPrompts.push(params.promptText);
+      return {
+        command: 'node',
+        args: ['-e', 'process.exit(0);'],
+        env: process.env,
+        displayCmd: 'node plan-exec test',
+        interactive: false,
+      };
+    });
+
+    try {
+      const options = {
+        agent: 'mock-plan-exec-agent',
+        mode: 'plan-execute',
+        interactive: false,
+        modelPlanning: 'claude-sonnet',
+        modelExecution: 'gemini-flash',
+        baseUrl: 'http://localhost:4000',
+        masterKey: 'sk-test',
+        delay: 0,
+      };
+
+      const result = await runTestCase('plan-exec-case', options, tmpParent);
+      assert.equal(result.success, true);
+      assert.equal(capturedPrompts.length, 2);
+      // Phase 1 (Planning): should NOT contain WALKTHROUGH_PROMPT
+      assert.equal(capturedPrompts[0], 'Plan the architecture.');
+      assert.ok(!capturedPrompts[0].includes(WALKTHROUGH_PROMPT));
+      // Phase 2 (Execution): MUST contain WALKTHROUGH_PROMPT
+      assert.ok(capturedPrompts[1].startsWith('Execute implementation.'));
+      assert.ok(capturedPrompts[1].includes(WALKTHROUGH_PROMPT));
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(tmpParent, { recursive: true, force: true });
+    }
+  });
+
+  it('should not append WALKTHROUGH_PROMPT when walkthrough is set to false', async () => {
+    const fs = await import('fs');
+    const os = await import('os');
+    const { runTestCase, WALKTHROUGH_PROMPT } = await import('../src/runner.js');
+    const { registerAgent } = await import('../src/agents/agent.js');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url.includes('/user/new')) {
+        return { ok: true, json: async () => ({ user_id: 'test-user-id', key: 'sk-12345678901234' }) };
+      }
+      if (url.includes('/key/generate')) {
+        return { ok: true, json: async () => ({ key: 'sk-virtual-key' }) };
+      }
+      if (url.includes('/user/info')) {
+        return { ok: true, json: async () => ({ user_info: { spend: 0 } }) };
+      }
+      return { ok: true, json: async () => ({ metadata: {} }) };
+    };
+
+    const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'tokenomics-test-no-walkthrough-'));
+    const useCasesDir = path.join(tmpParent, 'use-cases');
+    const caseDir = path.join(useCasesDir, 'no-walkthrough-case');
+    fs.mkdirSync(caseDir, { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'PROMPT.md'), 'Build simple app.');
+
+    let capturedPrompts = [];
+    registerAgent('mock-no-walkthrough-agent', (params) => {
+      capturedPrompts.push(params.promptText);
+      return {
+        command: 'node',
+        args: ['-e', 'process.exit(0);'],
+        env: process.env,
+        displayCmd: 'node no-walkthrough test',
+        interactive: false,
+      };
+    });
+
+    try {
+      const options = {
+        agent: 'mock-no-walkthrough-agent',
+        mode: 'simple',
+        interactive: false,
+        walkthrough: false,
+        model: 'claude-sonnet',
+        baseUrl: 'http://localhost:4000',
+        masterKey: 'sk-test',
+        delay: 0,
+      };
+
+      const result = await runTestCase('no-walkthrough-case', options, tmpParent);
+      assert.equal(result.success, true);
+      assert.equal(capturedPrompts.length, 1);
+      assert.equal(capturedPrompts[0], 'Build simple app.');
+      assert.ok(!capturedPrompts[0].includes(WALKTHROUGH_PROMPT));
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(tmpParent, { recursive: true, force: true });
+    }
+  });
 });
 
 

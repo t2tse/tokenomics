@@ -11,6 +11,7 @@ export const defaults = {
   agent: DEFAULT_AGENT,
   mode: 'simple',
   interactive: false,
+  walkthrough: true,
   model: 'claude-sonnet',
   modelPlanning: 'claude-sonnet',
   modelExecution: 'gemini-flash',
@@ -42,6 +43,7 @@ Options:
   --config <path>          Path to test plan JSON configuration file (default: 'test-plan.json')
   --mode <type>            Run mode override: 'simple' or 'plan-execute' (default: 'simple')
   --interactive            Run coding agent in interactive mode instead of headless mode (default: false)
+  --no-walkthrough         Disable appending walkthrough prompt doc instructions in headless mode (default: walkthrough is on)
   --model <name>           Model override for simple mode (default: 'claude-sonnet')
   --model-planning <name>  Model override for planning phase in plan-execute mode (default: 'claude-sonnet')
   --model-execution <name> Model override for execution phase in plan-execute mode (default: 'gemini-flash')
@@ -96,6 +98,9 @@ export function parseArgs(args = process.argv.slice(2)) {
     } else if (arg === '--interactive') {
       options.interactive = true;
       explicitFlags.add('interactive');
+    } else if (arg === '--no-walkthrough') {
+      options.walkthrough = false;
+      explicitFlags.add('walkthrough');
     } else if (arg === '--model') {
       options.model = getValue(i, arg);
       i++;
@@ -166,6 +171,7 @@ export function resolveCaseOptions(caseName, globalOptions, testPlan) {
     ...defaults,
     agent: globalOptions.agent,
     interactive: globalOptions.interactive,
+    walkthrough: globalOptions.walkthrough,
     baseUrl: globalOptions.baseUrl,
     masterKey: globalOptions.masterKey,
     delay: globalOptions.delay,

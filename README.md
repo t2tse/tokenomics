@@ -86,6 +86,7 @@ npm run build
 | `--config <path>` | Path to test plan JSON config file (mandatory when running without `--case`) | `test-plan.json` |
 | `--mode <type>` | Run mode override: `simple` or `plan-execute` | `simple` |
 | `--interactive` | Run coding agent in interactive mode instead of headless mode | `false` |
+| `--no-walkthrough` | Disable appending walkthrough prompt doc instructions in headless mode | *Off when passed* (default is on) |
 | `--model <name>` | Model override for simple mode | `claude-sonnet` |
 | `--model-planning <name>`| Model override for planning phase in `plan-execute` mode | `claude-sonnet` |
 | `--model-execution <name>`| Model override for execution phase in `plan-execute` mode | `gemini-flash` |

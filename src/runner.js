@@ -6,6 +6,11 @@ import { createTestUser, fetchUserMetrics } from './litellm-client.js';
 import { runCodingAgent } from './agents/agent.js';
 import { DEFAULT_AGENT } from './config.js';
 
+export const WALKTHROUGH_PROMPT = `After you finish all the tasks above, focus on the output you produced in the current output folder and do the following before hanging up
+1. Test out the app on your own for all functionality and provide a detailed AGENT-WALKTHROUGH.md on how to setup, run, make any further changes and clean up steps.
+2. Tell me how to launch the app for me to review. If running the app locally, ensure it only requires packages and runs within the project. Do not install anything globally.
+3. If no app is generated, do not tell me any setup steps as these are irrelevant. Just tell me what you did in AGENT-WALKTHROUGH.md`;
+
 /**
  * Runs a single benchmark test case.
  * @param {string} caseName - Name of test case directory
@@ -42,6 +47,8 @@ export async function runTestCase(caseName, options, parentDir) {
   let promptTextPlan = planPromptText || mainPromptText;
   let promptTextExec = execPromptText || mainPromptText;
 
+  const shouldAppendWalkthrough = !isInteractive && options.walkthrough !== false;
+
   if (isInteractive) {
     // Interactive mode: user prompts directly in agent UI; PROMPT md files are not required or injected
     console.log(`ℹ️ [NOTICE] Running in interactive mode. Please prompt and interact directly with the coding agent to continue the tokenomics measurements.`);
@@ -52,12 +59,18 @@ export async function runTestCase(caseName, options, parentDir) {
         `Prompt files are missing or empty for test case "${caseName}". Please provide PROMPT-PLAN.md and PROMPT-EXEC.md in: ${planPromptPath} and ${execPromptPath}`
       );
     }
+    if (shouldAppendWalkthrough) {
+      promptTextExec = `${promptTextExec}\n\n${WALKTHROUGH_PROMPT}`;
+    }
   } else {
     // Non-interactive headless mode in simple mode
     if (!promptTextSimple) {
       throw new Error(
         `PROMPT.md is missing or empty for test case "${caseName}". Please provide PROMPT.md in: ${promptPath}`
       );
+    }
+    if (shouldAppendWalkthrough) {
+      promptTextSimple = `${promptTextSimple}\n\n${WALKTHROUGH_PROMPT}`;
     }
   }
 

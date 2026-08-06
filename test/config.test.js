@@ -45,6 +45,14 @@ describe('config module', () => {
     assert.equal(optsInteractive.interactive, true);
   });
 
+  it('should parse --no-walkthrough flag correctly', () => {
+    const optsDefault = parseArgs([]);
+    assert.equal(optsDefault.walkthrough, true);
+
+    const optsNoWalkthrough = parseArgs(['--no-walkthrough']);
+    assert.equal(optsNoWalkthrough.walkthrough, false);
+  });
+
   it('resolveCaseOptions merges testPlan settings and CLI overrides', () => {
     const testPlan = {
       defaults: { delay: 4000 },
