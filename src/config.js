@@ -45,7 +45,6 @@ Options:
   --model <name>           Model override for simple mode (default: 'claude-sonnet')
   --model-planning <name>  Model override for planning phase in plan-execute mode (default: 'claude-sonnet')
   --model-execution <name> Model override for execution phase in plan-execute mode (default: 'gemini-flash')
-  --output-format <format> Output format for agent: 'text', 'json', or 'stream-json' (default: 'text')
   --base-url <url>         LiteLLM proxy endpoint (default: 'http://localhost:4000')
   --master-key <key>       LiteLLM master/admin API key (default: env LITELLM_API_KEY or 'sk-9999')
   --delay <ms>             Delay in ms before querying LiteLLM spend APIs after runs (default: 3000)
@@ -58,6 +57,8 @@ Models available in LiteLLM:
 `);
 }
 
+const VALID_MODES = ['simple', 'plan-execute'];
+
 /**
  * Parses command-line arguments and returns merged configuration options.
  * @param {string[]} [args=process.argv.slice(2)] - Command line arguments
@@ -67,49 +68,77 @@ export function parseArgs(args = process.argv.slice(2)) {
   const options = { ...defaults };
   const explicitFlags = new Set();
 
+  const getValue = (index, flagName) => {
+    const nextArg = args[index + 1];
+    if (nextArg === undefined || nextArg.startsWith('--')) {
+      console.error(`❌ Error: Flag "${flagName}" requires a non-empty value.`);
+      printHelp();
+      process.exit(1);
+    }
+    return nextArg;
+  };
+
   for (let i = 0; i < args.length; i++) {
     const arg = args[i];
-    if (arg === '--agent' && args[i + 1]) {
-      options.agent = args[++i];
+    if (arg === '--agent') {
+      options.agent = getValue(i, arg);
+      i++;
       explicitFlags.add('agent');
-    } else if (arg === '--mode' && args[i + 1]) {
-      options.mode = args[++i];
+    } else if (arg === '--mode') {
+      const modeVal = getValue(i, arg);
+      if (!VALID_MODES.includes(modeVal)) {
+        console.error(`❌ Error: Invalid value "${modeVal}" for flag "--mode". Allowed values: ${VALID_MODES.join(', ')}`);
+        process.exit(1);
+      }
+      options.mode = modeVal;
+      i++;
       explicitFlags.add('mode');
     } else if (arg === '--interactive') {
       options.interactive = true;
       explicitFlags.add('interactive');
-    } else if (arg === '--model' && args[i + 1]) {
-      options.model = args[++i];
+    } else if (arg === '--model') {
+      options.model = getValue(i, arg);
+      i++;
       explicitFlags.add('model');
-    } else if (arg === '--model-planning' && args[i + 1]) {
-      options.modelPlanning = args[++i];
+    } else if (arg === '--model-planning') {
+      options.modelPlanning = getValue(i, arg);
+      i++;
       explicitFlags.add('modelPlanning');
-    } else if (arg === '--model-execution' && args[i + 1]) {
-      options.modelExecution = args[++i];
+    } else if (arg === '--model-execution') {
+      options.modelExecution = getValue(i, arg);
+      i++;
       explicitFlags.add('modelExecution');
-    } else if (arg === '--output-format' && args[i + 1]) {
-      options.outputFormat = args[++i];
-      explicitFlags.add('outputFormat');
-    } else if (arg === '--base-url' && args[i + 1]) {
-      options.baseUrl = args[++i];
+    } else if (arg === '--base-url') {
+      options.baseUrl = getValue(i, arg);
+      i++;
       explicitFlags.add('baseUrl');
-    } else if (arg === '--master-key' && args[i + 1]) {
-      options.masterKey = args[++i];
+    } else if (arg === '--master-key') {
+      options.masterKey = getValue(i, arg);
+      i++;
       explicitFlags.add('masterKey');
-    } else if (arg === '--delay' && args[i + 1]) {
-      options.delay = parseInt(args[++i], 10);
+    } else if (arg === '--delay') {
+      const delayStr = getValue(i, arg);
+      const delayNum = parseInt(delayStr, 10);
+      if (isNaN(delayNum) || delayNum < 0 || String(delayNum) !== delayStr.trim()) {
+        console.error(`❌ Error: Invalid value "${delayStr}" for flag "--delay". Must be a non-negative integer.`);
+        process.exit(1);
+      }
+      options.delay = delayNum;
+      i++;
       explicitFlags.add('delay');
-    } else if (arg === '--case' && args[i + 1]) {
-      options.case = args[++i];
+    } else if (arg === '--case') {
+      options.case = getValue(i, arg);
+      i++;
       explicitFlags.add('case');
-    } else if (arg === '--config' && args[i + 1]) {
-      options.config = args[++i];
+    } else if (arg === '--config') {
+      options.config = getValue(i, arg);
+      i++;
       explicitFlags.add('config');
     } else if (arg === '--help' || arg === '-h') {
       printHelp();
       process.exit(0);
     } else {
-      console.error(`Unknown argument: ${arg}`);
+      console.error(`❌ Error: Unknown argument "${arg}".`);
       printHelp();
       process.exit(1);
     }
@@ -168,6 +197,11 @@ export function resolveCaseOptions(caseName, globalOptions, testPlan) {
     if (globalOptions[flag] !== undefined) {
       resolved[flag] = globalOptions[flag];
     }
+  }
+
+  if (resolved.mode && !VALID_MODES.includes(resolved.mode)) {
+    console.error(`❌ Error: Invalid mode "${resolved.mode}" resolved for case "${caseName}". Allowed values: ${VALID_MODES.join(', ')}`);
+    process.exit(1);
   }
 
   resolved.case = caseName;

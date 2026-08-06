@@ -46,7 +46,6 @@ export async function main(cliArgs) {
   console.log(`----------------------------------------------------------------------`);
   console.log(`🔗 LiteLLM proxy Base URL:     ${options.baseUrl}`);
   console.log(`📋 Config File:  ${configExists ? path.basename(configPath) : 'None (single case mode)'}`);
-  console.log(`======================================================================`);
 
   // Detect and list all available test cases from the use-cases sub-directory
   const useCasesDir = path.join(parentDir, 'use-cases');
@@ -70,6 +69,7 @@ export async function main(cliArgs) {
 
   console.log(`🔍 Discovered ${discoveredCases.length} total test cases in use-cases/ directory.`);
   console.log(`🎯 Targeting test cases: ${targetCases.join(', ')}`);
+  console.log(`======================================================================`);
 
   const results = [];
   const errors = [];

@@ -37,11 +37,6 @@ describe('config module', () => {
     assert.equal(opts.config, 'custom-plan.json');
   });
 
-  it('should parse --output-format flag correctly', () => {
-    const opts = parseArgs(['--output-format', 'stream-json']);
-    assert.equal(opts.outputFormat, 'stream-json');
-  });
-
   it('should parse --interactive flag correctly', () => {
     const optsDefault = parseArgs([]);
     assert.equal(optsDefault.interactive, false);
@@ -76,4 +71,45 @@ describe('config module', () => {
     const overriddenOpts = resolveCaseOptions('code-review', parsedWithOverrides, testPlan);
     assert.equal(overriddenOpts.model, 'gemini-flash');
   });
+
+  it('should validate missing flag value and exit', () => {
+    // Intercept process.exit and console.error
+    const originalExit = process.exit;
+    let exitCode = null;
+    process.exit = (code) => {
+      exitCode = code;
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      assert.throws(() => parseArgs(['--agent']), /process\.exit:1/);
+      assert.equal(exitCode, 1);
+
+      assert.throws(() => parseArgs(['--agent', '--mode', 'simple']), /process\.exit:1/);
+    } finally {
+      process.exit = originalExit;
+    }
+  });
+
+  it('should validate invalid flag values and exit', () => {
+    const originalExit = process.exit;
+    process.exit = (code) => {
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      // Invalid mode
+      assert.throws(() => parseArgs(['--mode', 'invalid-mode']), /process\.exit:1/);
+
+      // Invalid delay
+      assert.throws(() => parseArgs(['--delay', 'not-a-number']), /process\.exit:1/);
+      assert.throws(() => parseArgs(['--delay', '-100']), /process\.exit:1/);
+
+      // Unknown argument
+      assert.throws(() => parseArgs(['--unknown-flag']), /process\.exit:1/);
+    } finally {
+      process.exit = originalExit;
+    }
+  });
 });
+

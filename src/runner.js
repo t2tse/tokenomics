@@ -18,12 +18,47 @@ export async function runTestCase(caseName, options, parentDir) {
     ? parentDir
     : path.join(parentDir, 'use-cases');
   const caseDir = path.join(useCasesDir, caseName);
+  const isInteractive = Boolean(options.interactive);
+  const isPlanExecute = !isInteractive && options.mode === 'plan-execute';
+
   console.log(`\n======================================================================`);
-  console.log(`🚀 [START] Running Test Case: "${caseName}" (Mode: ${options.mode.toUpperCase()})`);
+  console.log(`🚀 [START] Running Test Case: "${caseName}" (Mode: ${isInteractive ? 'INTERACTIVE' : options.mode.toUpperCase()})`);
   console.log(`======================================================================`);
 
   if (!fs.existsSync(caseDir)) {
     throw new Error(`Test case folder does not exist: ${caseDir}`);
+  }
+
+  // 1. Determine Prompt files and validate prompt availability
+  const promptPath = path.join(caseDir, 'PROMPT.md');
+  const planPromptPath = path.join(caseDir, 'PROMPT-PLAN.md');
+  const execPromptPath = path.join(caseDir, 'PROMPT-EXEC.md');
+
+  const mainPromptText = fs.existsSync(promptPath) ? fs.readFileSync(promptPath, 'utf8').trim() : '';
+  const planPromptText = fs.existsSync(planPromptPath) ? fs.readFileSync(planPromptPath, 'utf8').trim() : '';
+  const execPromptText = fs.existsSync(execPromptPath) ? fs.readFileSync(execPromptPath, 'utf8').trim() : '';
+
+  let promptTextSimple = mainPromptText;
+  let promptTextPlan = planPromptText || mainPromptText;
+  let promptTextExec = execPromptText || mainPromptText;
+
+  if (isInteractive) {
+    // Interactive mode: user prompts directly in agent UI; PROMPT md files are not required or injected
+    console.log(`ℹ️ [NOTICE] Running in interactive mode. Please prompt and interact directly with the coding agent to continue the tokenomics measurements.`);
+  } else if (isPlanExecute) {
+    // Non-interactive headless mode in plan-execute mode
+    if (!promptTextPlan || !promptTextExec) {
+      throw new Error(
+        `Prompt files are missing or empty for test case "${caseName}". Please provide PROMPT-PLAN.md and PROMPT-EXEC.md in: ${planPromptPath} and ${execPromptPath}`
+      );
+    }
+  } else {
+    // Non-interactive headless mode in simple mode
+    if (!promptTextSimple) {
+      throw new Error(
+        `PROMPT.md is missing or empty for test case "${caseName}". Please provide PROMPT.md in: ${promptPath}`
+      );
+    }
   }
 
   // Define unique timestamp for this test run execution
@@ -34,19 +69,6 @@ export async function runTestCase(caseName, options, parentDir) {
   console.log(`🛠️ [PREPARE] Creating isolated test run directory: ${outputDirName}`);
   copyDir(caseDir, outputDir);
 
-  // 1. Determine Prompt to use from the original folder
-  let promptText = '';
-  const promptPath = path.join(caseDir, 'PROMPT.md');
-
-  if (fs.existsSync(promptPath)) {
-    promptText = fs.readFileSync(promptPath, 'utf8').trim();
-  }
-
-  // If the prompt is missing or completely empty, provide a localized fallback task
-  if (!promptText) {
-    promptText = `Implement a simple test function in the current folder "${caseName}". For example, create a new file "solution.js" that exports a function sum(a, b) and write a small test.`;
-  }
-
   // 2. Create a view-only internal user and generate a single unique Virtual Key on LiteLLM BEFORE starting the agent
   console.log(`🔐 [LITELLM] Provisioning LiteLLM user and virtual key prior to agent execution...`);
   const { userId, secretKey } = await createTestUser({
@@ -56,13 +78,13 @@ export async function runTestCase(caseName, options, parentDir) {
     runTimestamp,
   });
 
-  // 3. Run the coding agent based on simple vs plan-execute mode
+  // 3. Run the coding agent based on interactive vs headless (simple vs plan-execute) mode
   let agentRuns = [];
 
   try {
-    if (options.mode === 'simple') {
-      // Simple Run
-      console.log(`🤖 [AGENT] Starting Simple Phase (${options.agent || DEFAULT_AGENT}) with model: ${options.model} (Interactive: ${Boolean(options.interactive)})`);
+    if (isInteractive) {
+      // Interactive Mode: simple vs plan-execute mode and prompt files are ignored; user prompts directly
+      console.log(`🤖 [AGENT] Starting Interactive Session (${options.agent || DEFAULT_AGENT}) with model: ${options.model}`);
       const run = await runCodingAgent({
         agent: options.agent,
         caseDir: outputDir,
@@ -70,16 +92,15 @@ export async function runTestCase(caseName, options, parentDir) {
         secretKey,
         model: options.model,
         mode: 'auto',
-        promptText,
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
-        interactive: options.interactive,
+        interactive: true,
       });
-      agentRuns.push({ phase: 'execution', model: options.model, ...run });
-    } else {
-      // Plan-Execute Run
+      agentRuns.push({ phase: 'interactive', model: options.model, ...run });
+    } else if (isPlanExecute) {
+      // Plan-Execute Run (Headless)
       // Phase 1: Planning
-      console.log(`🤖 [AGENT] Starting Plan-Execute Phase 1 (Planning, ${options.agent || DEFAULT_AGENT}) with model: ${options.modelPlanning} (Interactive: ${Boolean(options.interactive)})`);
+      console.log(`🤖 [AGENT] Starting Plan-Execute Phase 1 (Planning, ${options.agent || DEFAULT_AGENT}) with model: ${options.modelPlanning}`);
       const planRun = await runCodingAgent({
         agent: options.agent,
         caseDir: outputDir,
@@ -87,15 +108,15 @@ export async function runTestCase(caseName, options, parentDir) {
         secretKey,
         model: options.modelPlanning,
         mode: 'plan',
-        promptText,
+        promptText: promptTextPlan,
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
-        interactive: options.interactive,
+        interactive: false,
       });
       agentRuns.push({ phase: 'planning', model: options.modelPlanning, ...planRun });
 
       // Phase 2: Execution
-      console.log(`🤖 [AGENT] Starting Plan-Execute Phase 2 (Execution, ${options.agent || DEFAULT_AGENT}) with model: ${options.modelExecution} (Interactive: ${Boolean(options.interactive)})`);
+      console.log(`🤖 [AGENT] Starting Plan-Execute Phase 2 (Execution, ${options.agent || DEFAULT_AGENT}) with model: ${options.modelExecution}`);
       const execRun = await runCodingAgent({
         agent: options.agent,
         caseDir: outputDir,
@@ -103,12 +124,28 @@ export async function runTestCase(caseName, options, parentDir) {
         secretKey,
         model: options.modelExecution,
         mode: 'auto',
-        promptText,
+        promptText: promptTextExec,
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
-        interactive: options.interactive,
+        interactive: false,
       });
       agentRuns.push({ phase: 'execution', model: options.modelExecution, ...execRun });
+    } else {
+      // Simple Run (Headless)
+      console.log(`🤖 [AGENT] Starting Simple Phase (${options.agent || DEFAULT_AGENT}) with model: ${options.model}`);
+      const run = await runCodingAgent({
+        agent: options.agent,
+        caseDir: outputDir,
+        caseName,
+        secretKey,
+        model: options.model,
+        mode: 'auto',
+        promptText: promptTextSimple,
+        baseUrl: options.baseUrl,
+        outputFormat: options.outputFormat,
+        interactive: false,
+      });
+      agentRuns.push({ phase: 'execution', model: options.model, ...run });
     }
   } catch (err) {
     console.error(`❌ [AGENT] Execution error during run: ${err.message}`);

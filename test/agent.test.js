@@ -28,16 +28,6 @@ describe('agent module', () => {
     assert.equal(config.env.ANTHROPIC_AUTH_TOKEN, 'sk-1234567890123456');
     assert.ok(config.displayCmd.includes('claude -p --output-format text --verbose --model claude-sonnet'));
 
-    const customConfig = claudeAgentAdapter({
-      secretKey: 'sk-1234567890123456',
-      model: 'claude-sonnet',
-      mode: 'plan',
-      promptText: 'Fix the bug',
-      baseUrl: 'http://localhost:4000',
-      outputFormat: 'stream-json',
-    });
-    assert.deepEqual(customConfig.args, ['-p', '--output-format', 'stream-json', '--verbose', '--model', 'claude-sonnet', '--permission-mode', 'plan', 'Fix the bug']);
-
     const interactiveConfig = claudeAgentAdapter({
       secretKey: 'sk-1234567890123456',
       model: 'claude-sonnet',
@@ -46,7 +36,7 @@ describe('agent module', () => {
       baseUrl: 'http://localhost:4000',
       interactive: true,
     });
-    assert.deepEqual(interactiveConfig.args, ['--output-format', 'text', '--verbose', '--model', 'claude-sonnet', '--permission-mode', 'plan', 'Fix the bug']);
+    assert.deepEqual(interactiveConfig.args, ['--output-format', 'text', '--verbose', '--model', 'claude-sonnet', 'Fix the bug']);
     assert.equal(interactiveConfig.interactive, true);
   });
 

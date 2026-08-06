@@ -95,8 +95,10 @@ npm run build
 | `--help, -h` | Show CLI help message | |
 
 ### Headless vs Interactive Execution
-- **Headless Mode (Default)**: Executes coding agents headlessly without user intervention (e.g., passing `-p` to Claude Code CLI). All process output is piped directly to log files (`AGENT-OUTPUT.out` / `AGENT-OUTPUT.err`).
-- **Interactive Mode (`--interactive`)**: Launches coding agents with terminal `stdio: 'inherit'`, allowing direct user interaction with the agent prompt session while still ensuring LiteLLM user provisioning prior to start and usage metrics capture upon exit.
+- **Headless Mode (Default)**: Executes coding agents headlessly without user intervention (e.g., passing `-p` to Claude Code CLI). All process output is piped directly to log files (`AGENT-OUTPUT.out` / `AGENT-OUTPUT.err`). Prompt instruction files are strictly required:
+  - **Simple Mode**: Requires `PROMPT.md` in `use-cases/<caseName>/PROMPT.md`. If missing or empty, the run aborts and requests the user to provide it.
+  - **Plan-Execute Mode**: Requires `PROMPT-PLAN.md` and `PROMPT-EXEC.md` in `use-cases/<caseName>/PROMPT-PLAN.md` and `PROMPT-EXEC.md` (falling back to `PROMPT.md` if available). If missing or empty, the run aborts and requests the user to provide them.
+- **Interactive Mode (`--interactive`)**: Launches coding agents with terminal `stdio: 'inherit'`, allowing direct user interaction with the agent. In interactive mode, simple or plan-execute mode settings are ignored (a single interactive session is launched), and prompt files are not required or injected into the command line so the user can prompt directly in the Coding Agent. LiteLLM user provisioning and cost telemetry collection remain fully active.
 
 ### Test Plan File Format (`test-plan.json`)
 
@@ -170,10 +172,14 @@ tokenomics/
 ├── test/                            <-- Automated unit test suite for the Benchmark test case runner 
 └── use-cases/                       <-- Benchmark test cases sub-directory
     ├── zero-to-one-vibe-coding/     <-- Use Case: Greenfield app generation from high level prompt instruction
-    │   ├── PROMPT.md                <-- Task prompt / instructions
+    │   ├── PROMPT.md                <-- Task prompt / instructions for headless simple mode
+    │   ├── PROMPT-PLAN.md           <-- Task prompt / instructions in Planning phase for headless plan-execute mode
+    │   ├── PROMPT-EXEC.md           <-- Task prompt / instructions in Execution phase for headless plan-execute mode
     │   ├── README.md                <-- Scenario description
     │   ├── test-results-20260722-172349.json   <-- Precision metrics & tokenomics telemetry
     │   └── output-20260722-172349/             <-- Clean agent workspace and generated artifacts
+    │       ├── AGENT-OUTPUT.out                 <-- Stdout stream captured from agent process execution
+    │       ├── AGENT-OUTPUT.err                 <-- Stderr stream captured from agent process execution
     │       ├── README.md
     │       ├── solution.js
     │       └── test.js
@@ -192,8 +198,9 @@ tokenomics/
 
 Each test case directory contains prompt instructions and workspace templates. When the harness runs, all test execution artifacts and metrics are isolated inside the target test case folder:
 
-- **Prompt File (`PROMPT.md`)**: Task prompt provided to the agent CLI.
+- **Prompt Files (`PROMPT.md`, `PROMPT-PLAN.md`, `PROMPT-EXEC.md`)**: Task prompts provided to the Coding Agent in headless mode (`PROMPT.md` for simple mode; `PROMPT-PLAN.md` and `PROMPT-EXEC.md` for plan-execute mode). Not required in interactive mode.
 - **Isolated Execution Workspace (`output-<timestamp>/`)**: Created dynamically per run to prevent mutating source templates and ensure reproducibility.
+- **Agent Output Logs (`AGENT-OUTPUT.out`, `AGENT-OUTPUT.err`)**: Stdout and stderr output streams captured live inside the `output-<timestamp>/` directory during headless agent execution.
 - **Output JSON Results (`test-results-<timestamp>.json`)**: Stores cost, token count, API request volume, execution phase breakdown, and model settings.
 
 The results file contains individual run configurations, phase breakdown metadata, and direct transaction aggregates (`spendUSD`, `promptTokens`, `completionTokens`, `totalTokens`, `totalRequests`, etc.).

@@ -24,8 +24,11 @@ export function claudeAgentAdapter({ secretKey, model, mode, promptText, baseUrl
     '--output-format', outputFormat || 'text',
     '--verbose',
     '--model', model,
-    '--permission-mode', mode,
   );
+
+  if (!interactive && mode) {
+    args.push('--permission-mode', mode);
+  }
 
   if (promptText) {
     args.push(promptText);
