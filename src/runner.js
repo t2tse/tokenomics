@@ -5,6 +5,7 @@ import { getFormattedTimestamp, sleep } from './utils/time.js';
 import { createTestUser, fetchUserMetrics } from './litellm-client.js';
 import { runCodingAgent } from './agents/agent.js';
 import { DEFAULT_AGENT } from './config.js';
+import { generateManifest } from './generate-manifest.js';
 
 export const WALKTHROUGH_PROMPT = `After you finish all the tasks above, focus on the output you produced in the current output folder and do the following before hanging up
 1. Test out the app on your own for all functionality and provide a detailed AGENT-WALKTHROUGH.md on how to setup, run, make any further changes and clean up steps.
@@ -230,6 +231,12 @@ export async function runTestCase(caseName, options, parentDir) {
     const resultsFilePath = path.join(caseDir, resultsFileName);
     fs.writeFileSync(resultsFilePath, JSON.stringify(testCaseResult, null, 2), 'utf8');
     console.log(`💾 [RESULTS] Written individual test results JSON to: ${resultsFilePath}`);
+
+    try {
+      generateManifest();
+    } catch (mErr) {
+      console.error(`⚠️ [MANIFEST] Failed updating manifest: ${mErr.message}`);
+    }
 
     return testCaseResult;
   }

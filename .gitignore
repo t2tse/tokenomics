@@ -340,3 +340,4 @@ build/
 bin/
 output-*/
 test-results-*.json
+reports-manifest.json

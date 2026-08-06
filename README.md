@@ -148,6 +148,34 @@ When running across all use cases, the harness reads `test-plan.json` to assign 
 
 ---
 
+## 📊 Tokenomics Report Dashboard (`REPORT.html`)
+
+The harness includes a local web page dashboard [`REPORT.html`](REPORT.html) to view all test output reports and model metrics.
+
+### Dashboard Features
+- **High-Level Tokenomics & Spend Summary**: Aggregates benchmark runs per **Use Case** and **Model**, presenting average values and min–max ranges for **Spend (USD)** and **Token Efficiency** (Tokens/$, Tokens/sec, Output Token Ratio %).
+- **Interactive Visualizations**: Comparative bar charts for average spend and token efficiency across models.
+- **Detailed Test Runs & Output Artifact Viewers**: Filterable table of test runs with direct links and modal viewers for output artifacts:
+  - 📄 `AGENT-WALKTHROUGH.md` (rendered Markdown)
+  - 📋 `AGENT-OUTPUT.out` (stdout execution log)
+  - ⚠️ `AGENT-OUTPUT.err` (stderr log)
+  - 🔍 `PROMPT.md` (task prompt instructions)
+- **Dynamic Refresh**: On load or when clicking **"Refresh Data"**, the dashboard fetches [`reports-manifest.json`](reports-manifest.json) and individual test result JSON files with timestamp cache-busting (`?_t=timestamp`) to display the latest results.
+
+### How to View & Refresh Reports
+1. **Open Dashboard**: Open `REPORT.html` directly in your browser, or serve via a local HTTP server:
+   ```bash
+   npx serve . -p 8080
+   # then open http://localhost:8080/REPORT.html
+   ```
+2. **Auto-Manifest Generation**: Running benchmark tests via `tokenomics` automatically updates `reports-manifest.json`. You can also manually re-scan `use-cases/` and rebuild the manifest anytime:
+   ```bash
+   npm run report
+   ```
+3. **Refresh Data**: Click the **"Refresh Data"** button in `REPORT.html` to pull all available JSON and artifact files.
+
+---
+
 ## 📁 Repository & Test Case Directory Structure
 
 The repository contains the standalone binary, modular source files, package configuration, test plan configuration, and benchmark test case directories:
@@ -156,12 +184,15 @@ The repository contains the standalone binary, modular source files, package con
 tokenomics/
 ├── bin/
 │   └── tokenomics                  <-- Bundled standalone CLI executable (built via esbuild)
+├── REPORT.html                      <-- Local web dashboard UI for viewing reports & artifacts
+├── reports-manifest.json            <-- Auto-generated manifest index for REPORT.html (.gitignored)
 ├── package.json                     <-- Node.js package manifest and scripts
 ├── README.md                        <-- Test Harness documentation and setup guide
 ├── test-plan.json                   <-- Test plan configuration defining modes and models per case
 ├── src/                             <-- Modular source directory
 │   ├── main.js                      <-- Application entry point & case orchestrator
 │   ├── config.js                    <-- CLI argument parsing & default settings
+│   ├── generate-manifest.js         <-- Scans use-cases/ and builds reports-manifest.json
 │   ├── agents/                      <-- Extensible agent engine adapters & registry directory
 │   │   ├── agent.js                 <-- Agent registry & child process spawner
 │   │   └── claude.js                <-- Claude Code agent CLI adapter
@@ -179,6 +210,7 @@ tokenomics/
     │   ├── README.md                <-- Scenario description
     │   ├── test-results-20260722-172349.json   <-- Precision metrics & tokenomics telemetry
     │   └── output-20260722-172349/             <-- Clean agent workspace and generated artifacts
+    │       ├── AGENT-WALKTHROUGH.md             <-- Walkthrough & setup instructions produced by agent
     │       ├── AGENT-OUTPUT.out                 <-- Stdout stream captured from agent process execution
     │       ├── AGENT-OUTPUT.err                 <-- Stderr stream captured from agent process execution
     │       ├── README.md
@@ -192,17 +224,19 @@ tokenomics/
 ```
 
 * **`bin/tokenomics`**: Bundled executable generated via `npm run build` using `esbuild`.
-* **`src/`**: Source code of this Coding Agent Test Harness 
-* **`test/`**: Unit test suite executable for this Coding Agent Test Harness via `npm run test:unit`.
-* **`package.json`**: Defines Node module type (`ESM`), build script (`esbuild`), and devDependencies.
+* **`REPORT.html`**: Interactive local web page dashboard for reviewing test results and viewing `AGENT-*` artifacts.
+* **`src/`**: Source code of this Coding Agent Test Harness.
+* **`test/`**: Unit test suite executable via `npm run test:unit`.
+* **`package.json`**: Defines Node module type (`ESM`), build script (`esbuild`), report scripts (`npm run report`), and devDependencies.
 * **Benchmark Test Case Directories**: Subdirectories corresponding to different software engineering tasks.
 
 Each test case directory contains prompt instructions and workspace templates. When the harness runs, all test execution artifacts and metrics are isolated inside the target test case folder:
 
 - **Prompt Files (`PROMPT.md`, `PROMPT-PLAN.md`, `PROMPT-EXEC.md`)**: Task prompts provided to the Coding Agent in headless mode (`PROMPT.md` for simple mode; `PROMPT-PLAN.md` and `PROMPT-EXEC.md` for plan-execute mode). Not required in interactive mode.
 - **Isolated Execution Workspace (`output-<timestamp>/`)**: Created dynamically per run to prevent mutating source templates and ensure reproducibility.
-- **Agent Output Logs (`AGENT-OUTPUT.out`, `AGENT-OUTPUT.err`)**: Stdout and stderr output streams captured live inside the `output-<timestamp>/` directory during headless agent execution.
+- **Agent Output Logs & Artifacts (`AGENT-WALKTHROUGH.md`, `AGENT-OUTPUT.out`, `AGENT-OUTPUT.err`)**: Artifacts and process log streams generated during agent execution inside `output-<timestamp>/`.
 - **Output JSON Results (`test-results-<timestamp>.json`)**: Stores cost, token count, API request volume, execution phase breakdown, and model settings.
 
 The results file contains individual run configurations, phase breakdown metadata, and direct transaction aggregates (`spendUSD`, `promptTokens`, `completionTokens`, `totalTokens`, `totalRequests`, etc.).
+
 
