@@ -335,3 +335,8 @@ build/
 *.pem
 *.key
 *.pub
+
+# Project specific ignores
+bin/
+output-*/
+test-results-*.json
