@@ -55,12 +55,17 @@ export function generateManifest() {
         const relJsonPath = path.relative(rootDir, jsonFilePath).replace(/\\/g, '/');
         const relOutputDir = hasOutputDir ? path.relative(rootDir, outputDirPath).replace(/\\/g, '/') : null;
 
-        // Check for specific AGENT-* artifact files
+        // Check for specific AGENT-* and prompt artifact files
         const checkArtifact = (filename) => {
-          if (!hasOutputDir) return null;
-          const artPath = path.join(outputDirPath, filename);
-          if (fs.existsSync(artPath)) {
-            return path.relative(rootDir, artPath).replace(/\\/g, '/');
+          if (hasOutputDir) {
+            const artPath = path.join(outputDirPath, filename);
+            if (fs.existsSync(artPath)) {
+              return path.relative(rootDir, artPath).replace(/\\/g, '/');
+            }
+          }
+          const caseArtPath = path.join(casePath, filename);
+          if (fs.existsSync(caseArtPath)) {
+            return path.relative(rootDir, caseArtPath).replace(/\\/g, '/');
           }
           return null;
         };
@@ -70,6 +75,8 @@ export function generateManifest() {
           stdout: checkArtifact('AGENT-OUTPUT.out'),
           stderr: checkArtifact('AGENT-OUTPUT.err'),
           prompt: checkArtifact('PROMPT.md'),
+          promptPlan: checkArtifact('PROMPT-PLAN.md'),
+          promptExec: checkArtifact('PROMPT-EXEC.md'),
           readme: checkArtifact('README.md'),
         };
 

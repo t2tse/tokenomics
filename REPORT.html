@@ -486,6 +486,18 @@
       border: 1px solid rgba(6, 182, 212, 0.3);
     }
 
+    .badge-interactive {
+      background: rgba(245, 158, 11, 0.15);
+      color: #fbbf24;
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .badge-headless {
+      background: rgba(148, 163, 184, 0.15);
+      color: #cbd5e1;
+      border: 1px solid rgba(148, 163, 184, 0.3);
+    }
+
     .status-success {
       background: rgba(16, 185, 129, 0.15);
       color: #34d399;
@@ -878,6 +890,37 @@
       </div>
     </div>
 
+    <!-- Focus Comparison & Model View Controls Bar -->
+    <div class="card" style="margin-bottom: 1.5rem; background: rgba(15, 23, 42, 0.85); border: 1px solid var(--accent-indigo);">
+      <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem;">
+        <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 1.25rem;">
+          <div class="filter-group">
+            <span class="filter-label" style="font-weight: 700; color: var(--accent-cyan);">🎯 Focus Use Case:</span>
+            <select id="globalUseCaseFilter" onchange="onGlobalFilterChange()">
+              <option value="ALL">All Use Cases (Overview)</option>
+            </select>
+          </div>
+          <div class="filter-group">
+            <span class="filter-label" style="font-weight: 700; color: var(--accent-indigo);">🧩 Model View:</span>
+            <select id="globalModelTypeFilter" onchange="onGlobalFilterChange()">
+              <option value="ALL">All Models & Sessions</option>
+              <option value="SINGLE">Headless Single Models</option>
+              <option value="COMBO">Headless Model Combos (Plan-Exec)</option>
+              <option value="INTERACTIVE">Interactive Sessions</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
+          <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Quick Chart Toggle:</span>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('ALL')">Show All</button>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('SINGLE')">Single Models</button>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('COMBO')">Combos Only</button>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('INTERACTIVE')">Interactive Only</button>
+        </div>
+      </div>
+    </div>
+
     <!-- High-Level Model Summary Section -->
     <div class="card">
       <div class="section-title">
@@ -928,12 +971,20 @@
     <div class="charts-grid">
       <div class="card">
         <div class="section-title"><span>💰</span> Average Spend ($) per Model by Use Case</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <span>Chart updates dynamically based on Focus Use Case & Model View filters above.</span>
+          <span style="color: var(--accent-cyan); font-weight: 600;">💡 Click any model legend item below to show/hide</span>
+        </div>
         <div class="chart-container">
           <canvas id="spendChart"></canvas>
         </div>
       </div>
       <div class="card">
         <div class="section-title"><span>🚀</span> Token Efficiency (Tokens / USD) per Model by Use Case</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <span>Chart updates dynamically based on Focus Use Case & Model View filters above.</span>
+          <span style="color: var(--accent-cyan); font-weight: 600;">💡 Click any model legend item below to show/hide</span>
+        </div>
         <div class="chart-container">
           <canvas id="efficiencyChart"></canvas>
         </div>
@@ -1106,49 +1157,225 @@
       }
     };
 
-    const DYNAMIC_MODEL_PALETTE = [
-      { chartBg: 'rgba(236, 72, 153, 0.85)', chartBorder: '#ec4899', badgeBg: 'rgba(236, 72, 153, 0.18)', badgeText: '#f472b6', badgeBorder: 'rgba(236, 72, 153, 0.4)' }, // Pink
-      { chartBg: 'rgba(168, 85, 247, 0.85)', chartBorder: '#a855f7', badgeBg: 'rgba(168, 85, 247, 0.18)', badgeText: '#c084fc', badgeBorder: 'rgba(168, 85, 247, 0.4)' }, // Purple
-      { chartBg: 'rgba(14, 165, 233, 0.85)', chartBorder: '#0ea5e9', badgeBg: 'rgba(14, 165, 233, 0.18)', badgeText: '#38bdf8', badgeBorder: 'rgba(14, 165, 233, 0.4)' }, // Sky
-      { chartBg: 'rgba(20, 184, 166, 0.85)', chartBorder: '#14b8a6', badgeBg: 'rgba(20, 184, 166, 0.18)', badgeText: '#2dd4bf', badgeBorder: 'rgba(20, 184, 166, 0.4)' }, // Teal
-      { chartBg: 'rgba(132, 204, 22, 0.85)', chartBorder: '#84cc16', badgeBg: 'rgba(132, 204, 22, 0.18)', badgeText: '#a3e635', badgeBorder: 'rgba(132, 204, 22, 0.4)' }, // Lime
-      { chartBg: 'rgba(234, 179, 8, 0.85)',  chartBorder: '#eab308', badgeBg: 'rgba(234, 179, 8, 0.18)', badgeText: '#fde047', badgeBorder: 'rgba(234, 179, 8, 0.4)' },  // Yellow
-      { chartBg: 'rgba(244, 63, 94, 0.85)',  chartBorder: '#f43f5e', badgeBg: 'rgba(244, 63, 94, 0.18)', badgeText: '#fb7185', badgeBorder: 'rgba(244, 63, 94, 0.4)' },  // Rose
+    const COMBO_MODEL_PALETTE = [
+      { chartBg: 'rgba(245, 158, 11, 0.85)', chartBorder: '#f59e0b', badgeBg: 'rgba(245, 158, 11, 0.18)', badgeText: '#fbbf24', badgeBorder: 'rgba(245, 158, 11, 0.4)' }, // Amber / Gold
+      { chartBg: 'rgba(236, 72, 153, 0.85)', chartBorder: '#ec4899', badgeBg: 'rgba(236, 72, 153, 0.18)', badgeText: '#f472b6', badgeBorder: 'rgba(236, 72, 153, 0.4)' }, // Hot Pink
+      { chartBg: 'rgba(16, 185, 129, 0.85)', chartBorder: '#10b981', badgeBg: 'rgba(16, 185, 129, 0.18)', badgeText: '#34d399', badgeBorder: 'rgba(16, 185, 129, 0.4)' }, // Emerald Green
       { chartBg: 'rgba(99, 102, 241, 0.85)', chartBorder: '#6366f1', badgeBg: 'rgba(99, 102, 241, 0.18)', badgeText: '#818cf8', badgeBorder: 'rgba(99, 102, 241, 0.4)' }, // Indigo
+      { chartBg: 'rgba(20, 184, 166, 0.85)', chartBorder: '#14b8a6', badgeBg: 'rgba(20, 184, 166, 0.18)', badgeText: '#2dd4bf', badgeBorder: 'rgba(20, 184, 166, 0.4)' }, // Teal
+      { chartBg: 'rgba(244, 63, 94, 0.85)',  chartBorder: '#f43f5e', badgeBg: 'rgba(244, 63, 94, 0.18)', badgeText: '#fb7185', badgeBorder: 'rgba(244, 63, 94, 0.4)' },  // Bright Rose
+      { chartBg: 'rgba(132, 204, 22, 0.85)', chartBorder: '#84cc16', badgeBg: 'rgba(132, 204, 22, 0.18)', badgeText: '#a3e635', badgeBorder: 'rgba(132, 204, 22, 0.4)' }, // Lime
+      { chartBg: 'rgba(168, 85, 247, 0.85)', chartBorder: '#a855f7', badgeBg: 'rgba(168, 85, 247, 0.18)', badgeText: '#c084fc', badgeBorder: 'rgba(168, 85, 247, 0.4)' }, // Purple
     ];
 
     const assignedDynamicModelColors = new Map();
 
+    function createStripedPattern(ctx, colorStr) {
+      if (!ctx) return colorStr;
+      const pCanvas = document.createElement('canvas');
+      pCanvas.width = 16;
+      pCanvas.height = 16;
+      const pctx = pCanvas.getContext('2d');
+
+      // Fill background color
+      pctx.fillStyle = colorStr;
+      pctx.fillRect(0, 0, 16, 16);
+
+      // Draw high-contrast diagonal white/translucent stripes
+      pctx.strokeStyle = 'rgba(255, 255, 255, 0.65)';
+      pctx.lineWidth = 3;
+      pctx.beginPath();
+      pctx.moveTo(0, 16);
+      pctx.lineTo(16, 0);
+      pctx.moveTo(-4, 4);
+      pctx.lineTo(4, -4);
+      pctx.moveTo(12, 20);
+      pctx.lineTo(20, 12);
+      pctx.stroke();
+
+      // Subtle dark accent line for contrast
+      pctx.strokeStyle = 'rgba(0, 0, 0, 0.3)';
+      pctx.lineWidth = 1;
+      pctx.beginPath();
+      pctx.moveTo(0, 16);
+      pctx.lineTo(16, 0);
+      pctx.stroke();
+
+      return ctx.createPattern(pCanvas, 'repeat');
+    }
+
     function getModelColorConfig(modelName) {
       if (!modelName) modelName = 'unknown';
       const key = modelName.trim().toLowerCase();
+      const isInteractive = key.includes('(interactive)') || key.includes('interactive');
 
-      // Direct match
-      if (PREDEFINED_MODEL_COLORS[key]) {
-        return PREDEFINED_MODEL_COLORS[key];
+      // Strip '(interactive)' or 'interactive' suffix to find base model key
+      const baseKey = key.replace(/\(interactive\)/g, '').replace(/interactive/g, '').trim();
+
+      let baseColor = null;
+
+      // Direct exact match on baseKey
+      if (PREDEFINED_MODEL_COLORS[baseKey]) {
+        baseColor = PREDEFINED_MODEL_COLORS[baseKey];
       }
 
-      // Substring match for predefined keys
-      for (const preKey in PREDEFINED_MODEL_COLORS) {
-        if (key.includes(preKey) || preKey.includes(key)) {
-          return PREDEFINED_MODEL_COLORS[preKey];
+      // Check dynamic assigned map
+      if (!baseColor && assignedDynamicModelColors.has(baseKey)) {
+        baseColor = assignedDynamicModelColors.get(baseKey);
+      }
+
+      // Single model substring match for predefined keys (if not combo)
+      const isCombo = baseKey.includes('/') || baseKey.includes(' / ');
+      if (!baseColor && !isCombo) {
+        for (const preKey in PREDEFINED_MODEL_COLORS) {
+          if (baseKey === preKey || baseKey.includes(preKey) || preKey.includes(baseKey)) {
+            baseColor = PREDEFINED_MODEL_COLORS[preKey];
+            break;
+          }
         }
       }
 
-      if (assignedDynamicModelColors.has(key)) {
-        return assignedDynamicModelColors.get(key);
+      // Fallback to dynamic combo palette
+      if (!baseColor) {
+        const idx = assignedDynamicModelColors.size % COMBO_MODEL_PALETTE.length;
+        baseColor = COMBO_MODEL_PALETTE[idx];
+        assignedDynamicModelColors.set(baseKey, baseColor);
       }
 
-      // Assign dynamic palette color deterministically for new/unknown models
-      const idx = assignedDynamicModelColors.size % DYNAMIC_MODEL_PALETTE.length;
-      const chosen = DYNAMIC_MODEL_PALETTE[idx];
-      assignedDynamicModelColors.set(key, chosen);
-      return chosen;
+      if (isInteractive) {
+        return {
+          ...baseColor,
+          isInteractive: true,
+          badgeBg: 'rgba(245, 158, 11, 0.22)',
+          badgeText: '#fbbf24',
+          badgeBorder: '#f59e0b',
+        };
+      }
+
+      return {
+        ...baseColor,
+        isInteractive: false
+      };
     }
 
     function getModelBadgeHtml(modelName) {
       const cfg = getModelColorConfig(modelName);
-      return `<span class="badge" style="background: ${cfg.badgeBg}; color: ${cfg.badgeText}; border: 1px solid ${cfg.badgeBorder};">${modelName}</span>`;
+      const extraStyle = cfg.isInteractive ? `background-image: repeating-linear-gradient(45deg, rgba(255,255,255,0.12) 0, rgba(255,255,255,0.12) 4px, transparent 4px, transparent 8px);` : '';
+      return `<span class="badge" style="background: ${cfg.badgeBg}; color: ${cfg.badgeText}; border: 1px solid ${cfg.badgeBorder}; ${extraStyle}">${modelName}</span>`;
+    }
+
+    function getRunModeInfo(r) {
+      const data = r.data || {};
+      let isInteractive = Boolean(data.interactive);
+      let mode = data.mode; // 'interactive', 'plan-execute', 'simple'
+
+      if (!mode) {
+        const runs = data.runs || [];
+        if (runs.some(pr => pr.phase === 'interactive')) {
+          isInteractive = true;
+          mode = 'interactive';
+        } else if (runs.some(pr => pr.phase === 'planning')) {
+          isInteractive = false;
+          mode = 'plan-execute';
+        } else {
+          isInteractive = false;
+          mode = 'simple';
+        }
+      }
+
+      if (isInteractive || mode === 'interactive') {
+        return {
+          type: 'interactive',
+          subType: 'interactive',
+          displayText: 'Interactive',
+          badgeClass: 'badge-interactive'
+        };
+      } else if (mode === 'plan-execute') {
+        return {
+          type: 'headless',
+          subType: 'plan-exec',
+          displayText: 'Headless (plan-exec)',
+          badgeClass: 'badge-headless'
+        };
+      } else {
+        return {
+          type: 'headless',
+          subType: 'simple',
+          displayText: 'Headless (simple)',
+          badgeClass: 'badge-headless'
+        };
+      }
+    }
+
+    function getRunModelConfig(r) {
+      const data = r.data || {};
+      const runs = data.runs || [];
+      const modeInfo = getRunModeInfo(r);
+      const isInteractive = modeInfo.type === 'interactive';
+
+      const planningRun = runs.find(pr => pr.phase === 'planning');
+      const executionRun = runs.find(pr => pr.phase === 'execution');
+
+      if (!isInteractive && planningRun && executionRun) {
+        const planModel = planningRun.model || 'unknown';
+        const execModel = executionRun.model || 'unknown';
+        if (planModel === execModel) {
+          return {
+            isMultiModel: false,
+            isInteractive: false,
+            key: planModel,
+            planModel,
+            execModel,
+            displayHtml: getModelBadgeHtml(planModel)
+          };
+        } else {
+          return {
+            isMultiModel: true,
+            isInteractive: false,
+            key: `${planModel} / ${execModel}`,
+            planModel,
+            execModel,
+            displayHtml: `
+              <div style="display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start;">
+                <div style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem;">
+                  <span style="color: var(--text-muted); font-weight: 600; min-width: 28px;">Plan:</span>
+                  ${getModelBadgeHtml(planModel)}
+                </div>
+                <div style="display: flex; align-items: center; gap: 0.3rem; font-size: 0.75rem;">
+                  <span style="color: var(--text-muted); font-weight: 600; min-width: 28px;">Exec:</span>
+                  ${getModelBadgeHtml(execModel)}
+                </div>
+              </div>
+            `
+          };
+        }
+      }
+
+      // Simple, interactive, or single-phase run
+      const models = runs.map(pr => pr.model).filter(Boolean);
+      const singleModel = models[0] || 'unknown';
+
+      if (isInteractive) {
+        const interactiveKey = `${singleModel} (Interactive)`;
+        const cautionIconHtml = `<span class="tooltip-icon" style="cursor: help; color: #f59e0b; font-size: 0.9rem; margin-left: 0.3rem;" data-tooltip-title="Interactive Session Default Model" data-tooltip-desc="This model was set as default when launching the coding agent. Note that the user may have switched models during the interactive session.">⚠️</span>`;
+        return {
+          isMultiModel: false,
+          isInteractive: true,
+          key: interactiveKey,
+          planModel: null,
+          execModel: null,
+          displayHtml: `<div style="display: flex; align-items: center; gap: 0.25rem;">${getModelBadgeHtml(singleModel)}${cautionIconHtml}</div>`
+        };
+      }
+
+      return {
+        isMultiModel: false,
+        isInteractive: false,
+        key: singleModel,
+        planModel: null,
+        execModel: null,
+        displayHtml: getModelBadgeHtml(singleModel)
+      };
     }
 
     // Load data from reports-manifest.json with cache-busting
@@ -1190,34 +1417,56 @@
       }
     }
 
+    // Global Filter Handlers
+    function onGlobalFilterChange() {
+      const globalCaseVal = document.getElementById('globalUseCaseFilter') ? document.getElementById('globalUseCaseFilter').value : 'ALL';
+      
+      // Sync detailed table use case filter
+      const tableCaseSelect = document.getElementById('filterUseCase');
+      if (tableCaseSelect) tableCaseSelect.value = globalCaseVal;
+
+      renderHighLevelSummary();
+      renderCharts();
+      renderRunsTable();
+    }
+
+    function setChartModelType(type) {
+      const typeSelect = document.getElementById('globalModelTypeFilter');
+      if (typeSelect) typeSelect.value = type;
+      onGlobalFilterChange();
+    }
+
     // Populate filter dropdowns
     function populateFilterOptions() {
       if (!globalManifestData) return;
       const caseSelect = document.getElementById('filterUseCase');
+      const globalCaseSelect = document.getElementById('globalUseCaseFilter');
       const modelSelect = document.getElementById('filterModel');
 
-      const currentCase = caseSelect.value;
+      const currentCase = globalCaseSelect ? globalCaseSelect.value : caseSelect.value;
       const currentModel = modelSelect.value;
 
-      // Extract unique models
+      // Extract unique models and model configurations
       const modelsSet = new Set();
       globalManifestData.runs.forEach(r => {
-        if (r.data && r.data.runs) {
-          r.data.runs.forEach(phaseRun => {
-            if (phaseRun.model) modelsSet.add(phaseRun.model);
-          });
-        }
+        const cfg = getRunModelConfig(r);
+        modelsSet.add(cfg.key);
+        if (cfg.planModel) modelsSet.add(cfg.planModel);
+        if (cfg.execModel) modelsSet.add(cfg.execModel);
       });
 
       // Populate Use Cases
-      caseSelect.innerHTML = '<option value="ALL">All Use Cases</option>';
-      globalManifestData.useCases.forEach(uc => {
-        const opt = document.createElement('option');
-        opt.value = uc;
-        opt.textContent = uc;
-        caseSelect.appendChild(opt);
-      });
-      caseSelect.value = currentCase && globalManifestData.useCases.includes(currentCase) ? currentCase : 'ALL';
+      const caseOptionsHtml = '<option value="ALL">All Use Cases (Overview)</option>' +
+        globalManifestData.useCases.map(uc => `<option value="${uc}">${uc}</option>`).join('');
+
+      caseSelect.innerHTML = '<option value="ALL">All Use Cases</option>' +
+        globalManifestData.useCases.map(uc => `<option value="${uc}">${uc}</option>`).join('');
+
+      if (globalCaseSelect) globalCaseSelect.innerHTML = caseOptionsHtml;
+
+      const validCase = currentCase && globalManifestData.useCases.includes(currentCase) ? currentCase : 'ALL';
+      caseSelect.value = validCase;
+      if (globalCaseSelect) globalCaseSelect.value = validCase;
 
       // Populate Models
       modelSelect.innerHTML = '<option value="ALL">All Models</option>';
@@ -1266,7 +1515,7 @@
       document.getElementById('kpiSuccessRate').innerText = `${successRatePct}% Success Rate (${successRunsCount}/${totalRunsCount})`;
     }
 
-    // High Level Summary grouped by (Use Case, Model) with Best/Worst Highlights per Use Case
+    // High Level Summary grouped by (Use Case, Model Config) with Best/Worst Highlights per Use Case
     function renderHighLevelSummary() {
       const tbody = document.getElementById('summaryTableBody');
       tbody.innerHTML = '';
@@ -1276,59 +1525,58 @@
         return;
       }
 
-      // Map key: "caseName||model"
+      const selUseCase = document.getElementById('globalUseCaseFilter') ? document.getElementById('globalUseCaseFilter').value : 'ALL';
+      const selModelType = document.getElementById('globalModelTypeFilter') ? document.getElementById('globalModelTypeFilter').value : 'ALL';
+
+      // Map key: "caseName||modelKey"
       const groupMap = new Map();
 
       globalManifestData.runs.forEach(r => {
         const cName = r.caseName || 'unknown';
+        if (selUseCase !== 'ALL' && cName !== selUseCase) return;
+
         const metrics = r.data.metrics || {};
         const duration = r.data.totalWallClockDurationSeconds || 0;
         const spend = metrics.spendUSD || 0;
         const tokens = metrics.totalTokens || 0;
         const completionTokens = metrics.completionTokens || 0;
         const isSuccess = Boolean(r.data.success);
+        const cfg = getRunModelConfig(r);
 
-        // Deduplicate or aggregate per model inside run
-        const modelsInRun = new Set();
-        if (r.data.runs && r.data.runs.length > 0) {
-          r.data.runs.forEach(phaseRun => {
-            if (phaseRun.model) modelsInRun.add(phaseRun.model);
+        if (selModelType === 'SINGLE' && cfg.isMultiModel) return;
+        if (selModelType === 'COMBO' && !cfg.isMultiModel) return;
+
+        const groupKey = `${cName}||${cfg.key}`;
+        if (!groupMap.has(groupKey)) {
+          groupMap.set(groupKey, {
+            caseName: cName,
+            modelKey: cfg.key,
+            modelDisplayHtml: cfg.displayHtml,
+            isInteractive: Boolean(cfg.isInteractive),
+            runsCount: 0,
+            successCount: 0,
+            spends: [],
+            tokensList: [],
+            durations: [],
+            efficiencies: [], // tokens / spend
+            tokensPerSec: [],
+            completionRatios: [], // completionTokens / totalTokens
           });
-        } else {
-          modelsInRun.add('unknown');
         }
 
-        modelsInRun.forEach(model => {
-          const key = `${cName}||${model}`;
-          if (!groupMap.has(key)) {
-            groupMap.set(key, {
-              caseName: cName,
-              model: model,
-              runsCount: 0,
-              successCount: 0,
-              spends: [],
-              tokensList: [],
-              durations: [],
-              efficiencies: [], // tokens / spend
-              tokensPerSec: [],
-              completionRatios: [], // completionTokens / totalTokens
-            });
-          }
+        const grp = groupMap.get(groupKey);
+        grp.runsCount++;
+        if (isSuccess) grp.successCount++;
 
-          const grp = groupMap.get(key);
-          grp.runsCount++;
-          if (isSuccess) grp.successCount++;
-
-          grp.spends.push(spend);
-          grp.tokensList.push(tokens);
-          grp.durations.push(duration);
-          if (spend > 0) grp.efficiencies.push(tokens / spend);
-          if (duration > 0) grp.tokensPerSec.push(tokens / duration);
-          if (tokens > 0) grp.completionRatios.push((completionTokens / tokens) * 100);
-        });
+        grp.spends.push(spend);
+        grp.tokensList.push(tokens);
+        grp.durations.push(duration);
+        if (spend > 0) grp.efficiencies.push(tokens / spend);
+        if (duration > 0) grp.tokensPerSec.push(tokens / duration);
+        if (tokens > 0) grp.completionRatios.push((completionTokens / tokens) * 100);
       });
 
-      // Compute averages and stats for each (caseName, model) group
+      // Compute averages and stats for each (caseName, modelKey) group
       const summaryItems = [];
       groupMap.forEach(grp => {
         const avgSpend = grp.spends.reduce((a, b) => a + b, 0) / grp.spends.length;
@@ -1396,9 +1644,9 @@
         });
       });
 
-      // Sort summary items by caseName, then model
+      // Sort summary items by caseName, then modelKey
       summaryItems.sort((a, b) => {
-        if (a.caseName === b.caseName) return a.model.localeCompare(b.model);
+        if (a.caseName === b.caseName) return a.modelKey.localeCompare(b.modelKey);
         return a.caseName.localeCompare(b.caseName);
       });
 
@@ -1468,7 +1716,7 @@
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${item.caseName}</strong></td>
-          <td>${getModelBadgeHtml(item.model)}</td>
+          <td>${item.modelDisplayHtml}</td>
           <td>${item.runsCount}</td>
           <td>
             <div class="metric-value ${spendClass}">${formatUSD(item.avgSpend)} ${spendTag}</div>
@@ -1485,7 +1733,11 @@ Max:    ${formatInt(Math.round(item.maxEff))} tok/$</div>
           <td><span class="metric-value ${tokSecClass}">${Math.round(item.avgTokSec)} tok/s ${tokSecTag}</span></td>
           <td><span class="metric-value">${item.avgCompRatio.toFixed(1)}%</span></td>
           <td>
-            <div class="metric-value ${durClass}">${item.avgDuration.toFixed(1)}s ${durTag}</div>
+            <div class="metric-value ${durClass}">
+              ${item.avgDuration.toFixed(1)}s
+              ${item.isInteractive ? `<span class="tooltip-icon" style="cursor: help; color: #f59e0b; font-size: 0.85rem; margin-left: 0.2rem;" data-tooltip-title="Human Latency Dependency" data-tooltip-desc="Wall-clock duration includes human latency (time spent by the user typing prompts, reviewing outputs, and interacting during the session).">⚠️</span>` : ''}
+              ${durTag}
+            </div>
             <div class="range-box">Min:    ${item.minDuration.toFixed(1)}s
 Median: ${item.medianDuration.toFixed(1)}s
 Max:    ${item.maxDuration.toFixed(1)}s</div>
@@ -1505,35 +1757,36 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
     function renderCharts() {
       if (!window.Chart || !globalManifestData || !globalManifestData.runs) return;
 
+      const selUseCase = document.getElementById('globalUseCaseFilter') ? document.getElementById('globalUseCaseFilter').value : 'ALL';
+      const selModelType = document.getElementById('globalModelTypeFilter') ? document.getElementById('globalModelTypeFilter').value : 'ALL';
+
       const useCasesSet = new Set();
       const modelsSet = new Set();
       const caseModelData = new Map();
 
       globalManifestData.runs.forEach(r => {
         const cName = r.caseName || 'unknown';
+        if (selUseCase !== 'ALL' && cName !== selUseCase) return;
+
+        const cfg = getRunModelConfig(r);
+        if (selModelType === 'SINGLE' && cfg.isMultiModel) return;
+        if (selModelType === 'COMBO' && !cfg.isMultiModel) return;
+
         useCasesSet.add(cName);
 
         const metrics = r.data.metrics || {};
         const spend = metrics.spendUSD || 0;
         const tokens = metrics.totalTokens || 0;
+        const m = cfg.key;
 
-        const modelsInRun = new Set();
-        if (r.data.runs && r.data.runs.length > 0) {
-          r.data.runs.forEach(pr => { if (pr.model) modelsInRun.add(pr.model); });
-        } else {
-          modelsInRun.add('unknown');
+        modelsSet.add(m);
+        const key = `${cName}||${m}`;
+        if (!caseModelData.has(key)) {
+          caseModelData.set(key, { spends: [], tokens: [] });
         }
-
-        modelsInRun.forEach(m => {
-          modelsSet.add(m);
-          const key = `${cName}||${m}`;
-          if (!caseModelData.has(key)) {
-            caseModelData.set(key, { spends: [], tokens: [] });
-          }
-          const item = caseModelData.get(key);
-          item.spends.push(spend);
-          item.tokens.push(tokens);
-        });
+        const item = caseModelData.get(key);
+        item.spends.push(spend);
+        item.tokens.push(tokens);
       });
 
       const useCases = Array.from(useCasesSet).sort();
@@ -1542,6 +1795,9 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
       // Build datasets for Spend and Efficiency
       const spendDatasets = [];
       const effDatasets = [];
+
+      const ctxSpend = document.getElementById('spendChart').getContext('2d');
+      const ctxEff = document.getElementById('efficiencyChart').getContext('2d');
 
       models.forEach((m, idx) => {
         const color = getModelColorConfig(m);
@@ -1562,27 +1818,29 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
           return totalS > 0 ? Math.round(totalT / totalS) : 0;
         });
 
+        const spendBg = color.isInteractive ? createStripedPattern(ctxSpend, color.chartBg) : color.chartBg;
+        const effBg = color.isInteractive ? createStripedPattern(ctxEff, color.chartBg) : color.chartBg;
+
         spendDatasets.push({
           label: m,
           data: spendValues,
-          backgroundColor: color.chartBg,
+          backgroundColor: spendBg,
           borderColor: color.chartBorder,
-          borderWidth: 1,
+          borderWidth: color.isInteractive ? 2 : 1,
           borderRadius: 6
         });
 
         effDatasets.push({
           label: m,
           data: effValues,
-          backgroundColor: color.chartBg,
+          backgroundColor: effBg,
           borderColor: color.chartBorder,
-          borderWidth: 1,
+          borderWidth: color.isInteractive ? 2 : 1,
           borderRadius: 6
         });
       });
 
       // Spend Chart
-      const ctxSpend = document.getElementById('spendChart').getContext('2d');
       if (spendChartInstance) spendChartInstance.destroy();
 
       spendChartInstance = new Chart(ctxSpend, {
@@ -1614,7 +1872,6 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
       });
 
       // Efficiency Chart
-      const ctxEff = document.getElementById('efficiencyChart').getContext('2d');
       if (efficiencyChartInstance) efficiencyChartInstance.destroy();
 
       efficiencyChartInstance = new Chart(ctxEff, {
@@ -1655,17 +1912,23 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
 
       const selCase = document.getElementById('filterUseCase').value;
       const selModel = document.getElementById('filterModel').value;
+      const selModelType = document.getElementById('globalModelTypeFilter') ? document.getElementById('globalModelTypeFilter').value : 'ALL';
       const searchVal = document.getElementById('filterSearch').value.toLowerCase().trim();
 
       const filtered = globalManifestData.runs.filter(r => {
         if (selCase !== 'ALL' && r.caseName !== selCase) return false;
 
+        const cfg = getRunModelConfig(r);
+        if (selModelType === 'SINGLE' && cfg.isMultiModel) return false;
+        if (selModelType === 'COMBO' && !cfg.isMultiModel) return false;
+
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : [];
-        if (selModel !== 'ALL' && !models.includes(selModel)) return false;
+        if (selModel !== 'ALL' && selModel !== cfg.key && !models.includes(selModel)) return false;
 
         if (searchVal) {
           const textMatch = r.id.toLowerCase().includes(searchVal) ||
                             r.caseName.toLowerCase().includes(searchVal) ||
+                            cfg.key.toLowerCase().includes(searchVal) ||
                             models.some(m => m.toLowerCase().includes(searchVal));
           if (!textMatch) return false;
         }
@@ -1682,8 +1945,35 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         const metrics = r.data.metrics || {};
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : ['unknown'];
         const isSuccess = Boolean(r.data.success);
+        const modeInfo = getRunModeInfo(r);
 
         const modelBadges = Array.from(new Set(models)).map(m => getModelBadgeHtml(m)).join(' ');
+
+        const planningRun = (r.data && r.data.runs) ? r.data.runs.find(pr => pr.phase === 'planning') : null;
+        const executionRun = (r.data && r.data.runs) ? r.data.runs.find(pr => pr.phase === 'execution') : null;
+
+        let modelCellHtml = '';
+        if (modeInfo.type === 'interactive') {
+          const cautionIconHtml = `<span class="tooltip-icon" style="cursor: help; color: #f59e0b; font-size: 0.9rem; margin-left: 0.25rem;" data-tooltip-title="Interactive Session Default Model" data-tooltip-desc="This model was set as default when launching the coding agent. Note that the user may have switched models during the interactive session.">⚠️</span>`;
+          modelCellHtml = `<div style="display: flex; align-items: center; gap: 0.25rem;">${getModelBadgeHtml(models[0] || 'unknown')}${cautionIconHtml}</div>`;
+        } else if (modeInfo.subType === 'plan-exec' || planningRun) {
+          const planModel = planningRun ? planningRun.model : (models[0] || 'unknown');
+          const execModel = executionRun ? executionRun.model : (models[1] || models[0] || 'unknown');
+          modelCellHtml = `
+            <div style="display: flex; flex-direction: column; gap: 0.3rem; align-items: flex-start;">
+              <div style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem;">
+                <span style="color: var(--text-muted); font-weight: 600; min-width: 32px;">Plan:</span>
+                ${getModelBadgeHtml(planModel)}
+              </div>
+              <div style="display: flex; align-items: center; gap: 0.35rem; font-size: 0.75rem;">
+                <span style="color: var(--text-muted); font-weight: 600; min-width: 32px;">Exec:</span>
+                ${getModelBadgeHtml(execModel)}
+              </div>
+            </div>
+          `;
+        } else {
+          modelCellHtml = modelBadges;
+        }
 
         const artifacts = r.artifacts || {};
 
@@ -1697,7 +1987,13 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         if (artifacts.stderr) {
           artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.stderr}', 'AGENT-OUTPUT.err', 'err', '${r.id}')">⚠️ stderr</button>`;
         }
-        if (artifacts.prompt) {
+        if (artifacts.promptPlan) {
+          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.promptPlan}', 'PROMPT-PLAN.md', 'markdown', '${r.id}')">🔍 Prompt (Plan)</button>`;
+        }
+        if (artifacts.promptExec) {
+          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.promptExec}', 'PROMPT-EXEC.md', 'markdown', '${r.id}')">🔍 Prompt (Exec)</button>`;
+        }
+        if (artifacts.prompt && artifacts.prompt !== artifacts.promptPlan && artifacts.prompt !== artifacts.promptExec) {
           artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.prompt}', 'PROMPT.md', 'markdown', '${r.id}')">🔍 Prompt</button>`;
         }
 
@@ -1707,16 +2003,22 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
           <td>
             <div style="font-family: var(--font-mono); font-weight: 600;">${r.timestamp}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">${r.id}</div>
+            <div style="margin-top: 0.35rem;"><span class="badge ${modeInfo.badgeClass}">${modeInfo.displayText}</span></div>
           </td>
           <td><strong>${r.caseName}</strong></td>
-          <td>${modelBadges}</td>
+          <td>${modelCellHtml}</td>
           <td><span class="metric-value">${formatUSD(metrics.spendUSD)}</span></td>
           <td>
             <div class="metric-value">${formatInt(metrics.totalTokens)}</div>
             <div class="range-box">p: ${formatInt(metrics.promptTokens)}
 c: ${formatInt(metrics.completionTokens)}</div>
           </td>
-          <td><span class="metric-value">${(r.data.totalWallClockDurationSeconds || 0).toFixed(1)}s</span></td>
+          <td>
+            <span class="metric-value">
+              ${(r.data.totalWallClockDurationSeconds || 0).toFixed(1)}s
+              ${modeInfo.type === 'interactive' ? `<span class="tooltip-icon" style="cursor: help; color: #f59e0b; font-size: 0.85rem; margin-left: 0.2rem;" data-tooltip-title="Human Latency Dependency" data-tooltip-desc="Wall-clock duration includes human latency (time spent by the user typing prompts, reviewing outputs, and interacting during the session).">⚠️</span>` : ''}
+            </span>
+          </td>
           <td>
             <span class="badge ${isSuccess ? 'status-success' : 'status-fail'}">
               ${isSuccess ? '✅ SUCCESS' : '❌ FAILED'}
