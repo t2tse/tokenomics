@@ -34,34 +34,86 @@ Before running the test harness, ensure you have the following prerequisites ins
 
 ## 🚀 Execution Workflows
 
-The harness supports two distinct execution patterns depending on task complexity:
+The harness supports two distinct execution patterns depending on task complexity and execution style (Headless vs Interactive):
+
+```mermaid
+flowchart TD
+    subgraph Setup["1. Setup & Provisioning Phase"]
+        A["Start Test Run"] --> B["Step 1: Run Isolation<br/>Create output-timestamp/ directory"]
+        B --> C["Step 2: Codebase Provisioning<br/>Copy test files to output folder"]
+        C --> D["Steps 3 & 4: User & Key Isolation<br/>Register view-only user & LiteLLM key"]
+    end
+
+    D --> E{"Execution Type"}
+
+    subgraph Interactive["Interactive Workflow"]
+        E -- "--interactive" --> I5["Step 5: Interactive Agent Session<br/>Launch agent with stdio: 'inherit'<br/>User prompts directly in terminal"]
+    end
+
+    subgraph Headless["Headless Execution"]
+        E -- "Default (Headless)" --> H1{"Execution Mode"}
+        
+        subgraph Simple["1. Simple Workflow"]
+            H1 -- "simple" --> S5["Step 5: Agent Session<br/>Run agent with single model"]
+        end
+
+        subgraph PlanExec["2. Plan-Execute Workflow"]
+            H1 -- "plan-execute" --> PE5["Step 5: Planning Phase<br/>Run agent in plan mode with MODEL_PLANNING"]
+            PE5 --> PE6["Step 6: Execution Phase<br/>Resume agent with MODEL_EXECUTION"]
+        end
+    end
+
+    I5 --> T1
+    S5 --> T1
+    PE6 --> T1
+
+    subgraph Telemetry["Telemetry & Results Phase"]
+        T1["Telemetry Collection<br/>Wait for DB flush & fetch LiteLLM metrics"] --> T2["Results Placement<br/>Save test-results-timestamp.json & update manifest"]
+    end
+```
 
 ### 1. Simple Use Case Workflow
-Runs the entire task under a single model and tracks costs for that model:
+Runs the entire task under a single model headlessly and tracks costs for that model:
 1.  **Run Isolation**: Creates a brand-new sub-folder inside the test case directory named `output-<timestamp>/`.
 2.  **Codebase Provisioning**: Copies the test case files into `output-<timestamp>/` dynamically (skipping nested outputs, git files, and `node_modules`).
 3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user (e.g., `test_<caseName>_<timestamp>@example.com`) without sending an invitation.
 4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user. The Key Name matches the test directory (with an automatic unique suffix fallback on name collisions).
-5.  **Agent Session**: Spawns the Coding Agent CLI inside the isolated `output-<timestamp>/` directory:
+5.  **Agent Session**: Spawns the Coding Agent CLI headlessly inside the isolated `output-<timestamp>/` directory with `-p` (headless prompt mode) and task prompt instructions from `PROMPT.md`:
     ```bash
-    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude --model <MODEL> --permission-mode auto [prompt]
+    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude -p --model <MODEL> --permission-mode auto "$(cat PROMPT.md)"
     ```
-6.  **Telemetry Collection**: Queries LiteLLM endpoints to obtain real-time cost, request, and token metrics.
-7.  **Results Placement**: Saves the run results directly inside the parent test case directory as `test-results-<timestamp>.json`.
+6.  **Telemetry Collection**: Waits for transaction logs to flush and queries LiteLLM endpoints to obtain real-time cost, request, and token metrics.
+7.  **Results Placement**: Saves the run results directly inside the parent test case directory as `test-results-<timestamp>.json` and updates `reports-manifest.json`.
 
 ### 2. Plan-Execute Use Case Workflow
-Divides the task into distinct planning and execution phases using different models to optimize cost-performance:
-1.  **Run Isolation**: Creates an isolated `output-<timestamp>/` folder and clones target files as described above.
-2.  **User Provisioning & Key Isolation**: Creates a view-only user and unique Virtual Key.
-3.  **Planning Phase**: Starts the agent in non-interactive `plan` mode inside `output-<timestamp>/` using `--model-planning`:
+Divides the task into distinct planning and execution phases headlessly using different models to optimize cost-performance:
+1.  **Run Isolation**: Creates an isolated `output-<timestamp>/` folder inside the test case directory.
+2.  **Codebase Provisioning**: Copies target test case files into `output-<timestamp>/` dynamically (skipping nested outputs, git files, and `node_modules`).
+3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user (e.g., `test_<caseName>_<timestamp>@example.com`).
+4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user.
+5.  **Planning Phase**: Starts the agent in non-interactive `plan` mode inside `output-<timestamp>/` using `-p`, `--model-planning`, and prompt instructions from `PROMPT-PLAN.md`:
     ```bash
-    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude --model <MODEL_PLANNING> --permission-mode plan [prompt]
+    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude -p --model <MODEL_PLANNING> --permission-mode plan "$(cat PROMPT-PLAN.md)"
     ```
-4.  **Execution Phase**: Resumes execution inside `output-<timestamp>/` to execute the written plan using `--model-execution`:
+6.  **Execution Phase**: Resumes execution inside `output-<timestamp>/` to execute the written plan using `-p`, `--model-execution`, and prompt instructions from `PROMPT-EXEC.md`:
     ```bash
-    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude --model <MODEL_EXECUTION> --permission-mode auto [prompt]
+    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude -p --model <MODEL_EXECUTION> --permission-mode auto "$(cat PROMPT-EXEC.md)"
     ```
-5.  **Telemetry Collection**: Waits for transaction logs to flush, gathers aggregate API metrics across both phases, and saves them to `test-results-<timestamp>.json` under the parent test case folder.
+7.  **Telemetry Collection**: Waits for LiteLLM transaction logs to flush and queries LiteLLM endpoints to gather aggregate API cost, request, and token metrics across both phases.
+8.  **Results Placement**: Saves the run results directly inside the parent test case directory as `test-results-<timestamp>.json` and updates `reports-manifest.json`.
+
+### 3. Interactive Execution Workflow
+Launches an interactive session allowing direct user prompting while maintaining full user/key isolation and tokenomics telemetry:
+1.  **Run Isolation**: Creates an isolated `output-<timestamp>/` folder inside the test case directory.
+2.  **Codebase Provisioning**: Copies test case files into `output-<timestamp>/` dynamically.
+3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user.
+4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user.
+5.  **Interactive Agent Session**: Spawns the Coding Agent CLI with terminal `stdio: 'inherit'`, allowing direct user prompting and interaction inside `output-<timestamp>/` (omitting `-p`, `--permission-mode`, and prompt file arguments):
+    ```bash
+    ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude --model <MODEL>
+    ```
+6.  **Telemetry Collection**: Waits for transaction logs to flush and queries LiteLLM endpoints to obtain cost, request, and token metrics for the interactive session.
+7.  **Results Placement**: Saves run results as `test-results-<timestamp>.json` inside the parent test case folder and updates `reports-manifest.json`.
 
 ---
 
@@ -98,10 +150,16 @@ npm run build
 | `--help, -h` | Show CLI help message | |
 
 ### Headless vs Interactive Execution
-- **Headless Mode (Default)**: Executes coding agents headlessly without user intervention (e.g., passing `-p` to Claude Code CLI). All process output is piped directly to log files (`AGENT-OUTPUT.out` / `AGENT-OUTPUT.err`). Prompt instruction files are strictly required:
-  - **Simple Mode**: Requires `PROMPT.md` in `use-cases/<caseName>/PROMPT.md`. If missing or empty, the run aborts and requests the user to provide it.
-  - **Plan-Execute Mode**: Requires `PROMPT-PLAN.md` and `PROMPT-EXEC.md` in `use-cases/<caseName>/PROMPT-PLAN.md` and `PROMPT-EXEC.md` (falling back to `PROMPT.md` if available). If missing or empty, the run aborts and requests the user to provide them.
-- **Interactive Mode (`--interactive`)**: Launches coding agents with terminal `stdio: 'inherit'`, allowing direct user interaction with the agent. In interactive mode, simple or plan-execute mode settings are ignored (a single interactive session is launched), and prompt files are not required or injected into the command line so the user can prompt directly in the Coding Agent. LiteLLM user provisioning and cost telemetry collection remain fully active.
+
+| Feature / Attribute | Headless Mode (Default) | Interactive Mode (`--interactive`) |
+| :--- | :--- | :--- |
+| **Execution Style** | Fully automated execution without user intervention (e.g., passing `-p` to Claude Code CLI) | Interactive terminal session with `stdio: 'inherit'` |
+| **User Interaction** | Headless (no user input required) | Direct user input and interactive terminal control |
+| **Process Output** | Output piped directly to log files (`AGENT-OUTPUT.out` / `AGENT-OUTPUT.err`) | Streamed directly to user terminal stdout/stderr |
+| **Permission & Prompt Flags** | Passed explicitly (`-p`, `--permission-mode auto` or `plan`, prompt file text) | Omitted (`-p`, `--permission-mode`, and prompt file text are omitted) |
+| **Prompt File Requirements** | **Required**:<br/>• **Simple Mode**: `PROMPT.md`<br/>• **Plan-Execute Mode**: `PROMPT-PLAN.md` & `PROMPT-EXEC.md` (fallback to `PROMPT.md`) | **Not required** (prompt files are omitted; user prompts directly in agent UI) |
+| **Supported Execution Modes** | Simple (`simple`) and Plan-Execute (`plan-execute`) | Single interactive session (simple/plan-execute settings ignored) |
+| **LiteLLM Provisioning & Telemetry** | Active (user/key provisioning & telemetry collected) | Active (user/key provisioning & telemetry collected) |
 
 ### Test Plan File Format (`test-plan.json`)
 
