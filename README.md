@@ -165,12 +165,12 @@ The harness includes a local web page dashboard [`REPORT.html`](REPORT.html) to 
 ### How to View & Refresh Reports
 1. **Open Dashboard**: Open `REPORT.html` directly in your browser, or serve via a local HTTP server:
    ```bash
-   npx serve . -p 8080
+   npm run report
    # then open http://localhost:8080/REPORT.html
    ```
 2. **Auto-Manifest Generation**: Running benchmark tests via `tokenomics` automatically updates `reports-manifest.json`. You can also manually re-scan `use-cases/` and rebuild the manifest anytime:
    ```bash
-   npm run report
+   npm run report:manifest
    ```
 3. **Refresh Data**: Click the **"Refresh Data"** button in `REPORT.html` to pull all available JSON and artifact files.
 

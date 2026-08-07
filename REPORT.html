@@ -170,7 +170,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
       gap: 1.25rem;
-      margin-bottom: 2rem;
+      margin-bottom: 1.5rem;
     }
 
     .kpi-card {
@@ -180,6 +180,7 @@
       border-radius: 16px;
       padding: 1.25rem;
       transition: transform 0.2s ease, border-color 0.2s ease;
+      position: relative;
     }
 
     .kpi-card:hover {
@@ -194,6 +195,9 @@
       letter-spacing: 0.05em;
       color: var(--text-muted);
       margin-bottom: 0.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
     }
 
     .kpi-value {
@@ -208,6 +212,132 @@
       font-size: 0.8rem;
       color: var(--text-secondary);
     }
+
+    /* Floating Portal Tooltip Styling */
+    #globalTooltip {
+      position: fixed;
+      z-index: 9999;
+      visibility: hidden;
+      opacity: 0;
+      width: max-content;
+      max-width: 280px;
+      background-color: #020617;
+      color: var(--text-primary);
+      border: 1px solid var(--accent-indigo);
+      border-radius: 10px;
+      padding: 0.75rem 1rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.8), 0 0 15px rgba(99, 102, 241, 0.2);
+      font-size: 0.78rem;
+      line-height: 1.45;
+      pointer-events: none;
+      transition: opacity 0.15s ease, transform 0.15s ease;
+      transform: translateY(4px);
+    }
+
+    #globalTooltip.active {
+      visibility: visible;
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    #globalTooltip strong {
+      color: var(--accent-cyan);
+      display: block;
+      margin-bottom: 0.25rem;
+      font-size: 0.82rem;
+    }
+
+    .tooltip-icon {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-left: 0.35rem;
+      cursor: help;
+      transition: color 0.2s ease;
+      vertical-align: middle;
+      display: inline-block;
+    }
+
+    .tooltip-icon:hover {
+      color: var(--accent-cyan);
+    }
+
+    /* Glossary Card */
+    .glossary-card {
+      background: rgba(15, 23, 42, 0.6);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 1.25rem;
+      margin-bottom: 2rem;
+    }
+
+    .glossary-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .glossary-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .glossary-toggle-btn {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      background: rgba(255,255,255,0.05);
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      border: 1px solid var(--card-border);
+    }
+
+    .glossary-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--card-border);
+    }
+
+    .glossary-item {
+      background: rgba(30, 41, 59, 0.5);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 0.85rem 1rem;
+    }
+
+    .glossary-item-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-primary);
+      margin-bottom: 0.3rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .glossary-item-desc {
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+    }
+
+    .glossary-tag {
+      font-size: 0.7rem;
+      padding: 0.15rem 0.4rem;
+      border-radius: 4px;
+      font-family: var(--font-mono);
+    }
+
+    .tag-output { background: rgba(244, 63, 94, 0.15); color: #f87171; }
+    .tag-input { background: rgba(6, 182, 212, 0.15); color: #22d3ee; }
+    .tag-metric { background: rgba(16, 185, 129, 0.15); color: #34d399; }
 
     /* Section Cards */
     .section-title {
@@ -288,12 +418,16 @@
       text-align: left;
       padding: 0.85rem 1rem;
       border-bottom: 1px solid var(--card-border);
+      white-space: nowrap;
+      vertical-align: top;
     }
 
     table.summary-table td {
       padding: 0.85rem 1rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       color: var(--text-primary);
+      vertical-align: top;
+      transition: background 0.2s ease;
     }
 
     table.summary-table tr:last-child td {
@@ -304,13 +438,31 @@
       background: rgba(255, 255, 255, 0.02);
     }
 
+    /* Selected Row Highlight - Clean, unblurred focus */
+    table.summary-table tr.selected-row td {
+      background: rgba(99, 102, 241, 0.22) !important;
+      border-top: 1px solid var(--accent-indigo) !important;
+      border-bottom: 1px solid var(--accent-indigo) !important;
+    }
+
+    table.summary-table tr.selected-row td:first-child {
+      border-left: 4px solid var(--accent-cyan) !important;
+      border-top-left-radius: 8px;
+      border-bottom-left-radius: 8px;
+    }
+
+    table.summary-table tr.selected-row td:last-child {
+      border-top-right-radius: 8px;
+      border-bottom-right-radius: 8px;
+    }
+
     /* Badges & Tags */
     .badge {
       display: inline-flex;
       align-items: center;
       gap: 0.3rem;
       padding: 0.25rem 0.6rem;
-      border-radius: 20px;
+      border-radius: 6px;
       font-size: 0.75rem;
       font-weight: 600;
       text-transform: capitalize;
@@ -346,12 +498,18 @@
       border: 1px solid rgba(244, 63, 94, 0.3);
     }
 
-    .range-pill {
-      display: inline-block;
-      font-size: 0.75rem;
-      color: var(--text-muted);
+    /* Range Box Styling for Min-Median-Max */
+    .range-box {
       font-family: var(--font-mono);
-      margin-left: 0.4rem;
+      font-size: 0.72rem;
+      color: var(--text-secondary);
+      background: rgba(15, 23, 42, 0.5);
+      padding: 0.35rem 0.55rem;
+      border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      margin-top: 0.35rem;
+      line-height: 1.45;
+      white-space: pre;
     }
 
     /* Metric Highlight */
@@ -366,6 +524,43 @@
       display: block;
     }
 
+    /* Metric Comparison Highlights (Best vs Worst per Use Case) */
+    .metric-best {
+      color: #34d399 !important; /* Emerald Green */
+    }
+
+    .metric-worst {
+      color: #f87171 !important; /* Rose Red */
+    }
+
+    .metric-tag-best {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 0.08rem 0.35rem;
+      border-radius: 4px;
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      margin-left: 0.3rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      vertical-align: middle;
+    }
+
+    .metric-tag-worst {
+      display: inline-block;
+      font-size: 0.62rem;
+      padding: 0.08rem 0.35rem;
+      border-radius: 4px;
+      background: rgba(244, 63, 94, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(244, 63, 94, 0.4);
+      margin-left: 0.3rem;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      vertical-align: middle;
+    }
+
     /* Grid layout for Charts */
     .charts-grid {
       display: grid;
@@ -376,18 +571,17 @@
 
     .chart-container {
       position: relative;
-      height: 280px;
+      height: 330px;
     }
 
-    /* Artifact Modal / Drawer */
+    /* Artifact Modal / Drawer (No background blur) */
     .modal-overlay {
       position: fixed;
       top: 0;
       left: 0;
       width: 100vw;
       height: 100vh;
-      background: rgba(15, 23, 42, 0.85);
-      backdrop-filter: blur(8px);
+      background: rgba(15, 23, 42, 0.35);
       z-index: 1000;
       display: flex;
       justify-content: flex-end;
@@ -559,10 +753,10 @@
     <!-- Header -->
     <header>
       <div class="brand">
-        <div class="brand-icon">⚡</div>
+        <div class="brand-icon">🪙</div>
         <div class="brand-text">
           <h1>Tokenomics Benchmark Dashboard</h1>
-          <p>LiteLLM Performance, Cost & Output Artifact Analytics</p>
+          <p>Model Performance, Cost & Output Artifact Analytics</p>
         </div>
       </div>
       <div class="header-actions">
@@ -580,24 +774,107 @@
     <!-- KPI Summary Grid -->
     <div class="kpi-grid">
       <div class="kpi-card">
-        <div class="kpi-title">Total Spend</div>
+        <div class="kpi-title">
+          <span>Total Spend</span>
+          <span class="tooltip-icon" data-tooltip-title="Total Spend (USD)" data-tooltip-desc="Total dollar cost incurred across test runs based on model pricing. Lower is better.">ℹ️</span>
+        </div>
         <div class="kpi-value" id="kpiTotalSpend">$0.00</div>
         <div class="kpi-sub" id="kpiAvgSpend">Avg $0.00 / run</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-title">Total Tokens</div>
+        <div class="kpi-title">
+          <span>Total Tokens</span>
+          <span class="tooltip-icon" data-tooltip-title="Total Tokens" data-tooltip-desc="Combined sum of Prompt (input) + Completion (output) tokens processed across all runs.">ℹ️</span>
+        </div>
         <div class="kpi-value" id="kpiTotalTokens">0</div>
         <div class="kpi-sub" id="kpiPromptCompletion">0 prompt / 0 comp</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-title">Avg Token Efficiency</div>
+        <div class="kpi-title">
+          <span>Avg Token Efficiency</span>
+          <span class="tooltip-icon" data-tooltip-title="Tokens per USD Spent" data-tooltip-desc="Total Tokens / Total Spend USD. Higher is better (more tokens processed per dollar spent).">ℹ️</span>
+        </div>
         <div class="kpi-value" id="kpiAvgEfficiency">0</div>
         <div class="kpi-sub">Tokens per USD spent</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-title">Benchmark Runs</div>
+        <div class="kpi-title">
+          <span>Benchmark Runs</span>
+          <span class="tooltip-icon" data-tooltip-title="Benchmark Runs" data-tooltip-desc="Total executed benchmark test runs and success percentage. Higher success rate is better.">ℹ️</span>
+        </div>
         <div class="kpi-value" id="kpiTotalRuns">0</div>
         <div class="kpi-sub" id="kpiSuccessRate">0% Success Rate</div>
+      </div>
+    </div>
+
+    <!-- Concise Metrics Summary & Glossary Guide -->
+    <div class="glossary-card">
+      <div class="glossary-header" onclick="toggleGlossary()">
+        <div class="glossary-title">
+          <span>💡</span> Tokenomics Metrics Summary & Quick Guide
+        </div>
+        <div class="glossary-toggle-btn" id="glossaryToggleLabel">Expand Guide ▾</div>
+      </div>
+      <div class="glossary-grid" id="glossaryGrid" style="display: none;">
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Completion Token</span>
+            <span class="glossary-tag tag-output">Output</span>
+          </div>
+          <div class="glossary-item-desc">
+            Text generated <strong>by the model</strong> (code, answers). Typically <strong>3x–5x more expensive</strong> per token than input tokens due to autoregressive decoding GPU compute.
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Prompt Token</span>
+            <span class="glossary-tag tag-input">Input</span>
+          </div>
+          <div class="glossary-item-desc">
+            Text sent <strong>to the model</strong> (user prompt, codebase files, instructions). Significantly cheaper per token; further discounted by prompt caching.
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Avg Tokens / $</span>
+            <span class="glossary-tag tag-metric">Efficiency</span>
+          </div>
+          <div class="glossary-item-desc">
+            <code>Total Tokens / Total Spend ($)</code>. Measures cost-efficiency. Higher values mean more tokens processed per dollar spent (Higher is better). Includes Min-Median-Max range.
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Completion Ratio</span>
+            <span class="glossary-tag tag-metric">Ratio</span>
+          </div>
+          <div class="glossary-item-desc">
+            <code>(Completion Tokens / Total Tokens) * 100</code>. Shows whether a run is <strong>context-heavy</strong> (&lt;5% reading code) vs <strong>generation-heavy</strong> (&gt;15% writing code).
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Tokens / Sec</span>
+            <span class="glossary-tag tag-metric">Speed</span>
+          </div>
+          <div class="glossary-item-desc">
+            <code>Total Tokens / Duration (s)</code>. Overall throughput speed measuring how fast the model and proxy ingest context and generate output (Higher is better).
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Avg Duration</span>
+            <span class="glossary-tag tag-metric">Latency</span>
+          </div>
+          <div class="glossary-item-desc">
+            Average total wall-clock elapsed time (in seconds) required for an agent to finish a benchmark task (Lower is better). Includes Min-Median-Max range.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -607,7 +884,7 @@
         <span>📊</span> Model Tokenomics & Spend Summary (per Use Case)
       </div>
       <p style="color: var(--text-secondary); font-size: 0.875rem; margin-bottom: 1.25rem;">
-        High-level breakdown comparing average metrics and min–max ranges per model across each benchmark use case.
+        High-level breakdown comparing average metrics and Min-Median-Max ranges per model across each benchmark use case. Relative performance within the same use case is highlighted (<span style="color:#34d399; font-weight:700;">Green = Best</span>, <span style="color:#f87171; font-weight:700;">Red = Worst</span>). Hover over ℹ️ for definition.
       </p>
 
       <div class="summary-table-wrapper">
@@ -617,11 +894,26 @@
               <th>Use Case</th>
               <th>Model</th>
               <th>Runs</th>
-              <th>Spend (USD) <span class="range-pill">Avg [Min – Max]</span></th>
-              <th>Token Efficiency <span class="range-pill">Avg Tokens/$</span></th>
-              <th>Tokens / Sec</th>
-              <th>Avg Completion Ratio</th>
-              <th>Avg Duration</th>
+              <th>
+                Spend (USD)
+                <span class="tooltip-icon" data-tooltip-title="Spend (USD)" data-tooltip-desc="Average total dollar cost per run with Min-Median-Max range. Lower is better.">ℹ️</span>
+              </th>
+              <th>
+                Token Efficiency
+                <span class="tooltip-icon" data-tooltip-title="Token Efficiency (Tokens/$)" data-tooltip-desc="Average total tokens processed per 1 USD spent with Min-Median-Max range. Higher is better.">ℹ️</span>
+              </th>
+              <th>
+                Tokens / Sec
+                <span class="tooltip-icon" data-tooltip-title="Tokens / Sec (Speed)" data-tooltip-desc="Total Tokens / Wall Clock Duration (s). Measures overall processing throughput speed. Higher is better.">ℹ️</span>
+              </th>
+              <th>
+                Avg Completion Ratio
+                <span class="tooltip-icon" data-tooltip-title="Completion Ratio (%)" data-tooltip-desc="(Completion Tokens / Total Tokens) * 100. Percentage of generated output tokens vs input context. Lower ratio indicates reading efficiency; higher ratio indicates generation density.">ℹ️</span>
+              </th>
+              <th>
+                Avg Duration
+                <span class="tooltip-icon" data-tooltip-title="Avg Duration (s)" data-tooltip-desc="Average wall-clock time in seconds to complete the benchmark task with Min-Median-Max range. Lower is better.">ℹ️</span>
+              </th>
               <th>Success</th>
             </tr>
           </thead>
@@ -635,13 +927,13 @@
     <!-- Charts Section -->
     <div class="charts-grid">
       <div class="card">
-        <div class="section-title"><span>💰</span> Average Spend per Model ($)</div>
+        <div class="section-title"><span>💰</span> Average Spend ($) per Model by Use Case</div>
         <div class="chart-container">
           <canvas id="spendChart"></canvas>
         </div>
       </div>
       <div class="card">
-        <div class="section-title"><span>🚀</span> Token Efficiency (Tokens / USD)</div>
+        <div class="section-title"><span>🚀</span> Token Efficiency (Tokens / USD) per Model by Use Case</div>
         <div class="chart-container">
           <canvas id="efficiencyChart"></canvas>
         </div>
@@ -694,7 +986,7 @@
     </div>
   </div>
 
-  <!-- Artifact Modal Drawer -->
+  <!-- Artifact Modal Drawer (No Blur Background) -->
   <div class="modal-overlay" id="artifactModal" onclick="closeModalOnOverlay(event)">
     <div class="modal-drawer">
       <div class="modal-header">
@@ -709,10 +1001,26 @@
     </div>
   </div>
 
+  <!-- Single Floating Portal Tooltip -->
+  <div id="globalTooltip"></div>
+
   <script>
     let globalManifestData = null;
     let spendChartInstance = null;
     let efficiencyChartInstance = null;
+
+    // Toggle Glossary Guide Card
+    function toggleGlossary() {
+      const grid = document.getElementById('glossaryGrid');
+      const label = document.getElementById('glossaryToggleLabel');
+      if (grid.style.display === 'none') {
+        grid.style.display = 'grid';
+        label.innerText = 'Collapse Guide ▴';
+      } else {
+        grid.style.display = 'none';
+        label.innerText = 'Expand Guide ▾';
+      }
+    }
 
     // Helper: format currency
     function formatUSD(val) {
@@ -724,6 +1032,18 @@
     function formatInt(val) {
       if (!val) return '0';
       return Number(val).toLocaleString();
+    }
+
+    // Helper: calculate median of an array of numbers
+    function calculateMedian(numbers) {
+      if (!numbers || numbers.length === 0) return 0;
+      const sorted = [...numbers].sort((a, b) => a - b);
+      const mid = Math.floor(sorted.length / 2);
+      if (sorted.length % 2 === 0) {
+        return (sorted[mid - 1] + sorted[mid]) / 2;
+      } else {
+        return sorted[mid];
+      }
     }
 
     // Load data from reports-manifest.json with cache-busting
@@ -841,7 +1161,7 @@
       document.getElementById('kpiSuccessRate').innerText = `${successRatePct}% Success Rate (${successRunsCount}/${totalRunsCount})`;
     }
 
-    // High Level Summary grouped by (Use Case, Model)
+    // High Level Summary grouped by (Use Case, Model) with Best/Worst Highlights per Use Case
     function renderHighLevelSummary() {
       const tbody = document.getElementById('summaryTableBody');
       tbody.innerHTML = '';
@@ -903,62 +1223,194 @@
         });
       });
 
-      // Convert groupMap to array and render
-      const groupArray = Array.from(groupMap.values()).sort((a, b) => {
-        if (a.caseName === b.caseName) return a.model.localeCompare(b.model);
-        return a.caseName.localeCompare(b.caseName);
-      });
-
-      groupArray.forEach(grp => {
+      // Compute averages and stats for each (caseName, model) group
+      const summaryItems = [];
+      groupMap.forEach(grp => {
         const avgSpend = grp.spends.reduce((a, b) => a + b, 0) / grp.spends.length;
         const minSpend = Math.min(...grp.spends);
+        const medianSpend = calculateMedian(grp.spends);
         const maxSpend = Math.max(...grp.spends);
 
         const avgEff = grp.efficiencies.length > 0 ? (grp.efficiencies.reduce((a, b) => a + b, 0) / grp.efficiencies.length) : 0;
         const minEff = grp.efficiencies.length > 0 ? Math.min(...grp.efficiencies) : 0;
+        const medianEff = calculateMedian(grp.efficiencies);
         const maxEff = grp.efficiencies.length > 0 ? Math.max(...grp.efficiencies) : 0;
 
         const avgTokSec = grp.tokensPerSec.length > 0 ? (grp.tokensPerSec.reduce((a, b) => a + b, 0) / grp.tokensPerSec.length) : 0;
         const avgCompRatio = grp.completionRatios.length > 0 ? (grp.completionRatios.reduce((a, b) => a + b, 0) / grp.completionRatios.length) : 0;
+        
         const avgDuration = grp.durations.reduce((a, b) => a + b, 0) / grp.durations.length;
+        const minDuration = Math.min(...grp.durations);
+        const medianDuration = calculateMedian(grp.durations);
+        const maxDuration = Math.max(...grp.durations);
 
-        const badgeClass = grp.model.includes('claude') ? 'badge-claude' :
-                           grp.model.includes('gemini') ? 'badge-gemini' : 'badge-model-default';
+        const successPct = (grp.successCount / grp.runsCount) * 100;
+
+        summaryItems.push({
+          ...grp,
+          avgSpend, minSpend, medianSpend, maxSpend,
+          avgEff, minEff, medianEff, maxEff,
+          avgTokSec, avgCompRatio,
+          avgDuration, minDuration, medianDuration, maxDuration,
+          successPct
+        });
+      });
+
+      // Group items by caseName to determine best/worst relative to each use case
+      const caseGroups = new Map();
+      summaryItems.forEach(item => {
+        if (!caseGroups.has(item.caseName)) caseGroups.set(item.caseName, []);
+        caseGroups.get(item.caseName).push(item);
+      });
+
+      // Compute min/max extremes per use case
+      const caseExtremes = new Map();
+      caseGroups.forEach((items, cName) => {
+        if (items.length < 2) {
+          caseExtremes.set(cName, null); // 1 model -> no comparison highlight
+          return;
+        }
+
+        const spends = items.map(i => i.avgSpend);
+        const effs = items.map(i => i.avgEff);
+        const tokSecs = items.map(i => i.avgTokSec);
+        const durations = items.map(i => i.avgDuration);
+        const successes = items.map(i => i.successPct);
+
+        caseExtremes.set(cName, {
+          minSpend: Math.min(...spends),
+          maxSpend: Math.max(...spends),
+          minEff: Math.min(...effs),
+          maxEff: Math.max(...effs),
+          minTokSec: Math.min(...tokSecs),
+          maxTokSec: Math.max(...tokSecs),
+          minDuration: Math.min(...durations),
+          maxDuration: Math.max(...durations),
+          minSuccess: Math.min(...successes),
+          maxSuccess: Math.max(...successes),
+        });
+      });
+
+      // Sort summary items by caseName, then model
+      summaryItems.sort((a, b) => {
+        if (a.caseName === b.caseName) return a.model.localeCompare(b.model);
+        return a.caseName.localeCompare(b.caseName);
+      });
+
+      summaryItems.forEach(item => {
+        const extremes = caseExtremes.get(item.caseName);
+
+        // Spend: Lower is Best
+        let spendClass = '', spendTag = '';
+        if (extremes && extremes.minSpend !== extremes.maxSpend) {
+          if (item.avgSpend === extremes.minSpend) {
+            spendClass = 'metric-best';
+            spendTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.avgSpend === extremes.maxSpend) {
+            spendClass = 'metric-worst';
+            spendTag = '<span class="metric-tag-worst">WORST</span>';
+          }
+        }
+
+        // Efficiency: Higher is Best
+        let effClass = '', effTag = '';
+        if (extremes && extremes.minEff !== extremes.maxEff) {
+          if (item.avgEff === extremes.maxEff) {
+            effClass = 'metric-best';
+            effTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.avgEff === extremes.minEff) {
+            effClass = 'metric-worst';
+            effTag = '<span class="metric-tag-worst">WORST</span>';
+          }
+        }
+
+        // Speed (Tokens/sec): Higher is Best
+        let tokSecClass = '', tokSecTag = '';
+        if (extremes && extremes.minTokSec !== extremes.maxTokSec) {
+          if (item.avgTokSec === extremes.maxTokSec) {
+            tokSecClass = 'metric-best';
+            tokSecTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.avgTokSec === extremes.minTokSec) {
+            tokSecClass = 'metric-worst';
+            tokSecTag = '<span class="metric-tag-worst">WORST</span>';
+          }
+        }
+
+        // Duration: Lower is Best
+        let durClass = '', durTag = '';
+        if (extremes && extremes.minDuration !== extremes.maxDuration) {
+          if (item.avgDuration === extremes.minDuration) {
+            durClass = 'metric-best';
+            durTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.avgDuration === extremes.maxDuration) {
+            durClass = 'metric-worst';
+            durTag = '<span class="metric-tag-worst">WORST</span>';
+          }
+        }
+
+        // Success Rate: Higher is Best
+        let succClass = '', succTag = '';
+        if (extremes && extremes.minSuccess !== extremes.maxSuccess) {
+          if (item.successPct === extremes.maxSuccess) {
+            succClass = 'metric-best';
+            succTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.successPct === extremes.minSuccess) {
+            succClass = 'metric-worst';
+            succTag = '<span class="metric-tag-worst">WORST</span>';
+          }
+        }
+
+        const badgeClass = item.model.includes('claude') ? 'badge-claude' :
+                           item.model.includes('gemini') ? 'badge-gemini' : 'badge-model-default';
 
         const tr = document.createElement('tr');
         tr.innerHTML = `
-          <td><strong>${grp.caseName}</strong></td>
-          <td><span class="badge ${badgeClass}">${grp.model}</span></td>
-          <td>${grp.runsCount}</td>
+          <td><strong>${item.caseName}</strong></td>
+          <td><span class="badge ${badgeClass}">${item.model}</span></td>
+          <td>${item.runsCount}</td>
           <td>
-            <span class="metric-value">${formatUSD(avgSpend)}</span>
-            <span class="range-pill">[${formatUSD(minSpend)} – ${formatUSD(maxSpend)}]</span>
+            <div class="metric-value ${spendClass}">${formatUSD(item.avgSpend)} ${spendTag}</div>
+            <div class="range-box">Min:    ${formatUSD(item.minSpend)}
+Median: ${formatUSD(item.medianSpend)}
+Max:    ${formatUSD(item.maxSpend)}</div>
           </td>
           <td>
-            <span class="metric-value">${formatInt(Math.round(avgEff))} tok/$</span>
-            <span class="range-pill">[${formatInt(Math.round(minEff))} – ${formatInt(Math.round(maxEff))}]</span>
+            <div class="metric-value ${effClass}">${formatInt(Math.round(item.avgEff))} tok/$ ${effTag}</div>
+            <div class="range-box">Min:    ${formatInt(Math.round(item.minEff))} tok/$
+Median: ${formatInt(Math.round(item.medianEff))} tok/$
+Max:    ${formatInt(Math.round(item.maxEff))} tok/$</div>
           </td>
-          <td><span class="metric-value">${Math.round(avgTokSec)} tok/s</span></td>
-          <td><span class="metric-value">${avgCompRatio.toFixed(1)}%</span></td>
-          <td><span class="metric-value">${avgDuration.toFixed(1)}s</span></td>
+          <td><span class="metric-value ${tokSecClass}">${Math.round(item.avgTokSec)} tok/s ${tokSecTag}</span></td>
+          <td><span class="metric-value">${item.avgCompRatio.toFixed(1)}%</span></td>
           <td>
-            <span class="badge ${grp.successCount === grp.runsCount ? 'status-success' : 'status-fail'}">
-              ${grp.successCount}/${grp.runsCount} (${Math.round((grp.successCount / grp.runsCount) * 100)}%)
+            <div class="metric-value ${durClass}">${item.avgDuration.toFixed(1)}s ${durTag}</div>
+            <div class="range-box">Min:    ${item.minDuration.toFixed(1)}s
+Median: ${item.medianDuration.toFixed(1)}s
+Max:    ${item.maxDuration.toFixed(1)}s</div>
+          </td>
+          <td>
+            <span class="badge ${item.successCount === item.runsCount ? 'status-success' : 'status-fail'} ${succClass}">
+              ${item.successCount}/${item.runsCount} (${Math.round(item.successPct)}%)
             </span>
+            ${succTag}
           </td>
         `;
         tbody.appendChild(tr);
       });
     }
 
-    // Render Chart.js graphs
+    // Render Chart.js graphs grouped by Use Case, comparing Models
     function renderCharts() {
       if (!window.Chart || !globalManifestData || !globalManifestData.runs) return;
 
-      // Prepare data per model
-      const modelMetrics = new Map();
+      const useCasesSet = new Set();
+      const modelsSet = new Set();
+      const caseModelData = new Map();
 
       globalManifestData.runs.forEach(r => {
+        const cName = r.caseName || 'unknown';
+        useCasesSet.add(cName);
+
         const metrics = r.data.metrics || {};
         const spend = metrics.spendUSD || 0;
         const tokens = metrics.totalTokens || 0;
@@ -971,25 +1423,76 @@
         }
 
         modelsInRun.forEach(m => {
-          if (!modelMetrics.has(m)) {
-            modelMetrics.set(m, { spends: [], tokens: [] });
+          modelsSet.add(m);
+          const key = `${cName}||${m}`;
+          if (!caseModelData.has(key)) {
+            caseModelData.set(key, { spends: [], tokens: [] });
           }
-          modelMetrics.get(m).spends.push(spend);
-          modelMetrics.get(m).tokens.push(tokens);
+          const item = caseModelData.get(key);
+          item.spends.push(spend);
+          item.tokens.push(tokens);
         });
       });
 
-      const labels = Array.from(modelMetrics.keys());
-      const avgSpends = labels.map(m => {
-        const arr = modelMetrics.get(m).spends;
-        return arr.reduce((a, b) => a + b, 0) / arr.length;
-      });
+      const useCases = Array.from(useCasesSet).sort();
+      const models = Array.from(modelsSet).sort();
 
-      const avgEfficiencies = labels.map(m => {
-        const data = modelMetrics.get(m);
-        let totalS = 0, totalT = 0;
-        data.spends.forEach((s, i) => { totalS += s; totalT += data.tokens[i]; });
-        return totalS > 0 ? Math.round(totalT / totalS) : 0;
+      // Custom sleek color palette per model
+      const palette = [
+        { bg: 'rgba(139, 92, 246, 0.8)', border: '#8b5cf6' }, // Claude Purple
+        { bg: 'rgba(59, 130, 246, 0.8)', border: '#3b82f6' },  // Gemini Blue
+        { bg: 'rgba(6, 182, 212, 0.8)', border: '#06b6d4' },   // Cyan
+        { bg: 'rgba(245, 158, 11, 0.8)', border: '#f59e0b' },  // Amber
+        { bg: 'rgba(244, 63, 94, 0.8)', border: '#f43f5e' },   // Rose
+      ];
+
+      function getModelColor(modelName, index) {
+        if (modelName.includes('claude')) return palette[0];
+        if (modelName.includes('gemini-1')) return palette[1];
+        if (modelName.includes('gemini-2') || modelName.includes('flash')) return palette[2];
+        return palette[index % palette.length];
+      }
+
+      // Build datasets for Spend and Efficiency
+      const spendDatasets = [];
+      const effDatasets = [];
+
+      models.forEach((m, idx) => {
+        const color = getModelColor(m, idx);
+
+        const spendValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).spends;
+          return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
+        const effValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const data = caseModelData.get(key);
+          let totalS = 0, totalT = 0;
+          data.spends.forEach((s, i) => { totalS += s; totalT += data.tokens[i]; });
+          return totalS > 0 ? Math.round(totalT / totalS) : 0;
+        });
+
+        spendDatasets.push({
+          label: m,
+          data: spendValues,
+          backgroundColor: color.bg,
+          borderColor: color.border,
+          borderWidth: 1,
+          borderRadius: 6
+        });
+
+        effDatasets.push({
+          label: m,
+          data: effValues,
+          backgroundColor: color.bg,
+          borderColor: color.border,
+          borderWidth: 1,
+          borderRadius: 6
+        });
       });
 
       // Spend Chart
@@ -999,23 +1502,27 @@
       spendChartInstance = new Chart(ctxSpend, {
         type: 'bar',
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Average Spend (USD)',
-            data: avgSpends,
-            backgroundColor: labels.map(l => l.includes('claude') ? 'rgba(139, 92, 246, 0.7)' : 'rgba(59, 130, 246, 0.7)'),
-            borderColor: labels.map(l => l.includes('claude') ? '#8b5cf6' : '#3b82f6'),
-            borderWidth: 1,
-            borderRadius: 8
-          }]
+          labels: useCases,
+          datasets: spendDatasets
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: $${Number(ctx.raw).toFixed(4)}`
+              }
+            }
+          },
           scales: {
             y: { ticks: { color: '#94a3b8', callback: v => '$' + v }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { ticks: { color: '#f8fafc' }, grid: { display: false } }
+            x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
           }
         }
       });
@@ -1027,23 +1534,27 @@
       efficiencyChartInstance = new Chart(ctxEff, {
         type: 'bar',
         data: {
-          labels: labels,
-          datasets: [{
-            label: 'Tokens per USD',
-            data: avgEfficiencies,
-            backgroundColor: 'rgba(16, 185, 129, 0.7)',
-            borderColor: '#10b981',
-            borderWidth: 1,
-            borderRadius: 8
-          }]
+          labels: useCases,
+          datasets: effDatasets
         },
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: { legend: { display: false } },
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString()} tok/$`
+              }
+            }
+          },
           scales: {
             y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { ticks: { color: '#f8fafc' }, grid: { display: false } }
+            x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
           }
         }
       });
@@ -1095,19 +1606,20 @@
 
         let artifactPills = '';
         if (artifacts.walkthrough) {
-          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.walkthrough}', 'AGENT-WALKTHROUGH.md', 'markdown')">📄 Walkthrough</button>`;
+          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.walkthrough}', 'AGENT-WALKTHROUGH.md', 'markdown', '${r.id}')">📄 Walkthrough</button>`;
         }
         if (artifacts.stdout) {
-          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.stdout}', 'AGENT-OUTPUT.out', 'text')">📋 stdout</button>`;
+          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.stdout}', 'AGENT-OUTPUT.out', 'text', '${r.id}')">📋 stdout</button>`;
         }
         if (artifacts.stderr) {
-          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.stderr}', 'AGENT-OUTPUT.err', 'err')">⚠️ stderr</button>`;
+          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.stderr}', 'AGENT-OUTPUT.err', 'err', '${r.id}')">⚠️ stderr</button>`;
         }
         if (artifacts.prompt) {
-          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.prompt}', 'PROMPT.md', 'markdown')">🔍 Prompt</button>`;
+          artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.prompt}', 'PROMPT.md', 'markdown', '${r.id}')">🔍 Prompt</button>`;
         }
 
         const tr = document.createElement('tr');
+        tr.id = `run-row-${r.id}`;
         tr.innerHTML = `
           <td>
             <div style="font-family: var(--font-mono); font-weight: 600;">${r.timestamp}</div>
@@ -1117,8 +1629,9 @@
           <td>${modelBadges}</td>
           <td><span class="metric-value">${formatUSD(metrics.spendUSD)}</span></td>
           <td>
-            <span class="metric-value">${formatInt(metrics.totalTokens)}</span>
-            <span class="metric-sub">${formatInt(metrics.promptTokens)} p / ${formatInt(metrics.completionTokens)} c</span>
+            <div class="metric-value">${formatInt(metrics.totalTokens)}</div>
+            <div class="range-box">p: ${formatInt(metrics.promptTokens)}
+c: ${formatInt(metrics.completionTokens)}</div>
           </td>
           <td><span class="metric-value">${(r.data.totalWallClockDurationSeconds || 0).toFixed(1)}s</span></td>
           <td>
@@ -1133,7 +1646,16 @@
     }
 
     // Modal Artifact Viewer
-    async function openArtifact(filePath, title, type) {
+    async function openArtifact(filePath, title, type, runId) {
+      if (runId) {
+        document.querySelectorAll('#runsTableBody tr').forEach(row => row.classList.remove('selected-row'));
+        const targetRow = document.getElementById(`run-row-${runId}`);
+        if (targetRow) {
+          targetRow.classList.add('selected-row');
+          targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
       const modal = document.getElementById('artifactModal');
       const modalTitle = document.getElementById('modalTitle');
       const modalBody = document.getElementById('modalBody');
@@ -1172,6 +1694,47 @@
         tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag] || tag)
       );
     }
+
+    // Floating Portal Tooltip Event Listeners
+    document.addEventListener('mouseover', (e) => {
+      const target = e.target.closest('[data-tooltip-desc]');
+      const tooltip = document.getElementById('globalTooltip');
+      if (!target || !tooltip) return;
+
+      const title = target.getAttribute('data-tooltip-title') || '';
+      const desc = target.getAttribute('data-tooltip-desc') || '';
+
+      tooltip.innerHTML = `${title ? `<strong>${escapeHTML(title)}</strong>` : ''}${escapeHTML(desc)}`;
+
+      const rect = target.getBoundingClientRect();
+      const tooltipRect = tooltip.getBoundingClientRect();
+
+      let top = rect.top - tooltipRect.height - 8;
+      let left = rect.left + (rect.width / 2) - (tooltipRect.width / 2);
+
+      // Position below if pushed above screen
+      if (top < 10) {
+        top = rect.bottom + 8;
+      }
+
+      // Bound to viewport horizontal edges
+      if (left < 10) left = 10;
+      if (left + tooltipRect.width > window.innerWidth - 10) {
+        left = window.innerWidth - tooltipRect.width - 10;
+      }
+
+      tooltip.style.top = `${top}px`;
+      tooltip.style.left = `${left}px`;
+      tooltip.classList.add('active');
+    });
+
+    document.addEventListener('mouseout', (e) => {
+      const target = e.target.closest('[data-tooltip-desc]');
+      const tooltip = document.getElementById('globalTooltip');
+      if (target && tooltip) {
+        tooltip.classList.remove('active');
+      }
+    });
 
     // Auto-load on page start
     window.addEventListener('DOMContentLoaded', loadDashboardData);
