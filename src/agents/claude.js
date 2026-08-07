@@ -8,7 +8,7 @@
  * @param {string} params.baseUrl - LiteLLM proxy base URL
  * @returns {{ command: string, args: string[], env: object, displayCmd: string }} Process execution config
  */
-export function claudeAgentAdapter({ secretKey, model, mode, promptText, baseUrl, outputFormat = 'text', interactive = false }) {
+export function claudeAgentAdapter({ secretKey, model, mode, promptText, baseUrl, outputFormat = 'text', interactive = false, resume = false }) {
   const env = {
     ...process.env,
     ANTHROPIC_BASE_URL: baseUrl,
@@ -16,6 +16,9 @@ export function claudeAgentAdapter({ secretKey, model, mode, promptText, baseUrl
   };
 
   const args = [];
+  if (resume) {
+    args.push('-c');
+  }
   if (!interactive) {
     args.push('-p');
   }

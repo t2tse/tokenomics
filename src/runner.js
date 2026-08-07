@@ -142,6 +142,7 @@ export async function runTestCase(caseName, options, parentDir) {
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
         interactive: false,
+        resume: true,
       });
       agentRuns.push({ phase: 'execution', model: options.modelExecution, ...execRun });
     } else {
@@ -200,6 +201,8 @@ export async function runTestCase(caseName, options, parentDir) {
 
     const testCaseResult = {
       caseName,
+      mode: isInteractive ? 'interactive' : (isPlanExecute ? 'plan-execute' : 'simple'),
+      interactive: isInteractive,
       success,
       totalWallClockDurationSeconds: totalWallClockDurationMs / 1000,
       metrics: {
