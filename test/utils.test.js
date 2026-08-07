@@ -21,7 +21,7 @@ describe('time utils', () => {
 });
 
 describe('fs utils', () => {
-  it('copyDir should copy files and ignore excluded directories', () => {
+  it('copyDir should copy files and ignore excluded directories and files', () => {
     const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'harness-test-'));
     const srcDir = path.join(tmpDir, 'src');
     const destDir = path.join(tmpDir, 'dest');
@@ -33,6 +33,7 @@ describe('fs utils', () => {
     fs.mkdirSync(path.join(srcDir, 'node_modules'));
 
     fs.writeFileSync(path.join(srcDir, 'file.txt'), 'hello');
+    fs.writeFileSync(path.join(srcDir, 'test-setup.sh'), '#!/bin/bash\necho setup');
     fs.writeFileSync(path.join(srcDir, 'output-123', 'ignored.txt'), 'ignore');
 
     copyDir(srcDir, destDir);
@@ -42,6 +43,7 @@ describe('fs utils', () => {
     assert.ok(!fs.existsSync(path.join(destDir, 'test-results-123')));
     assert.ok(!fs.existsSync(path.join(destDir, '.git')));
     assert.ok(!fs.existsSync(path.join(destDir, 'node_modules')));
+    assert.ok(!fs.existsSync(path.join(destDir, 'test-setup.sh')));
 
     fs.rmSync(tmpDir, { recursive: true, force: true });
   });

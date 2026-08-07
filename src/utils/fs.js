@@ -2,7 +2,7 @@ import fs from 'fs';
 import path from 'path';
 
 /**
- * Recursively copies a directory, skipping output-*, test-results-*, .git, and node_modules.
+ * Recursively copies a directory, skipping output-*, test-results-*, .git, node_modules, and test-setup.sh.
  * @param {string} src - Source directory path
  * @param {string} dest - Destination directory path
  */
@@ -14,12 +14,13 @@ export function copyDir(src, dest) {
     const srcPath = path.join(src, entry.name);
     const destPath = path.join(dest, entry.name);
 
-    // Skip nested output/results directories, git files, and node_modules to avoid infinite recursion
+    // Skip nested output/results directories, git files, node_modules, and test-setup.sh to avoid infinite recursion or copying setup files
     if (
       entry.name.startsWith('output-') ||
       entry.name.startsWith('test-results-') ||
       entry.name === '.git' ||
-      entry.name === 'node_modules'
+      entry.name === 'node_modules' ||
+      entry.name === 'test-setup.sh'
     ) {
       continue;
     }
