@@ -4,7 +4,7 @@ This repository contains a **Node.js Test Harness** designed to evaluate softwar
 
 Currently only support testing against `claude` Claude Code CLI. Other popular coding agents will be added.
 
-The harness automates isolated user/key provisioning, executes tasks in either simple or multi-phase plan-execute modes, and collects precision token metrics and cost attributes directly from LiteLLM's local PostgreSQL database.
+The harness automates isolated [user/key provisioning](https://docs.litellm.ai/docs/proxy/virtual_keys#setup), executes tasks in either simple or multi-phase plan-execute modes, and collects precision token metrics and [cost attributes](https://docs.litellm.ai/docs/proxy/cost_tracking) directly from LiteLLM's local [PostgreSQL database](https://docs.litellm.ai/docs/proxy/db_info).
 
 ---
 
@@ -77,7 +77,7 @@ Runs the entire task under a single model headlessly and tracks costs for that m
 1.  **Run Isolation**: Creates a brand-new sub-folder inside the test case directory named `output-<timestamp>/`.
 2.  **Codebase Provisioning**: Copies the test case files into `output-<timestamp>/` dynamically (skipping nested outputs, git files, and `node_modules`).
 3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user (e.g., `test_<caseName>_<timestamp>@example.com`) without sending an invitation.
-4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user. The Key Name matches the test directory (with an automatic unique suffix fallback on name collisions).
+4.  **Key Isolation**: Generates a new [LiteLLM Virtual Key](https://docs.litellm.ai/docs/proxy/virtual_keys#setup) owned by the new user. The Key Name matches the test directory (with an automatic unique suffix fallback on name collisions).
 5.  **Agent Session**: Spawns the Coding Agent CLI headlessly inside the isolated `output-<timestamp>/` directory with `-p` (headless prompt mode) and task prompt instructions from `PROMPT.md`:
     ```bash
     ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude -p --model <MODEL> --permission-mode auto "$(cat PROMPT.md)"
@@ -90,7 +90,7 @@ Divides the task into distinct planning and execution phases headlessly using di
 1.  **Run Isolation**: Creates an isolated `output-<timestamp>/` folder inside the test case directory.
 2.  **Codebase Provisioning**: Copies target test case files into `output-<timestamp>/` dynamically (skipping nested outputs, git files, and `node_modules`).
 3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user (e.g., `test_<caseName>_<timestamp>@example.com`).
-4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user.
+4.  **Key Isolation**: Generates a new [LiteLLM Virtual Key](https://docs.litellm.ai/docs/proxy/virtual_keys#setup) owned by the new user.
 5.  **Planning Phase**: Starts the agent in non-interactive `plan` mode inside `output-<timestamp>/` using `-p`, `--model-planning`, and prompt instructions from `PROMPT-PLAN.md`:
     ```bash
     ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude -p --model <MODEL_PLANNING> --permission-mode plan "$(cat PROMPT-PLAN.md)"
@@ -107,7 +107,7 @@ Launches an interactive session allowing direct user prompting while maintaining
 1.  **Run Isolation**: Creates an isolated `output-<timestamp>/` folder inside the test case directory.
 2.  **Codebase Provisioning**: Copies test case files into `output-<timestamp>/` dynamically.
 3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user.
-4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user.
+4.  **Key Isolation**: Generates a new [LiteLLM Virtual Key](https://docs.litellm.ai/docs/proxy/virtual_keys#setup) owned by the new user.
 5.  **Interactive Agent Session**: Spawns the Coding Agent CLI with terminal `stdio: 'inherit'`, allowing direct user prompting and interaction inside `output-<timestamp>/` (omitting `-p`, `--permission-mode`, and prompt file arguments):
     ```bash
     ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude --model <MODEL>
