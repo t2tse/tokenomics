@@ -1,6 +1,8 @@
 # 🪙 Coding Agent Test Harness for Tokenomics measurements
 
-This repository contains a **Node.js Test Harness** designed to evaluate software development tasks executed by Claude Code CLI agents against a locally running **LiteLLM proxy**. For user to understand the cost impact when choosing different model to plan and execute tasks.
+This repository contains a **Node.js Test Harness** designed to evaluate software development tasks executed by Coding Agents against a locally running **LiteLLM proxy**. For user to understand the cost impact when choosing different model to plan and execute tasks.
+
+Currently only support testing against `claude` Claude Code CLI. Other popular coding agents will be added.
 
 The harness automates isolated user/key provisioning, executes tasks in either simple or multi-phase plan-execute modes, and collects precision token metrics and cost attributes directly from LiteLLM's local PostgreSQL database.
 
@@ -26,7 +28,7 @@ Before running the test harness, ensure you have the following prerequisites ins
 
 1.  **Node.js**: v18.0.0 or higher (fully compatible with v24.16.0)
 2.  **LiteLLM Proxy**: Active and running locally on port `4000`
-3.  **Claude Code CLI**: Globally installed as the `claude` executable
+3.  **Coding Agent**: Globally installed coding agent executable (Currently only supports `claude` Claude Code CLI)
 
 ---
 
@@ -40,7 +42,7 @@ Runs the entire task under a single model and tracks costs for that model:
 2.  **Codebase Provisioning**: Copies the test case files into `output-<timestamp>/` dynamically (skipping nested outputs, git files, and `node_modules`).
 3.  **User Provisioning**: Registers a brand-new internal, view-only LiteLLM user (e.g., `test_<caseName>_<timestamp>@example.com`) without sending an invitation.
 4.  **Key Isolation**: Generates a new LiteLLM Virtual Key owned by the new user. The Key Name matches the test directory (with an automatic unique suffix fallback on name collisions).
-5.  **Agent Session**: Spawns the Claude Code CLI inside the isolated `output-<timestamp>/` directory:
+5.  **Agent Session**: Spawns the Coding Agent CLI inside the isolated `output-<timestamp>/` directory:
     ```bash
     ANTHROPIC_BASE_URL="http://localhost:4000" ANTHROPIC_AUTH_TOKEN="sk-XXXXX" claude --model <MODEL> --permission-mode auto [prompt]
     ```
