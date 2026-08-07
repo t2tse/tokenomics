@@ -1,0 +1,2 @@
+Identify all the microservices located under the src/ directory, detect which programming language each service is written in, and output the list as a clean markdown table showing: Service Name, Directory, and Primary Language.
+We want to audit these microservices for code quality, exception handling and database query formatting standards for the languages I have set up locally. Design an audit plan detailing what you will check and save it as an Audit Plan artifact. Do not execute the audit yet. Stop after writing the plan and wait for my instructions.
