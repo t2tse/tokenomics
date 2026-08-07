@@ -10,6 +10,50 @@ const __dirname = path.dirname(__filename);
 const parentDir = path.resolve(__dirname, '..');
 
 /**
+ * Formats and prints scheduled test case runs in a clean ASCII table.
+ * @param {Array<string|object>} runsToExecute - List of run targets
+ * @param {object} options - Parsed CLI options
+ * @param {object|null} testPlan - Parsed test-plan.json object
+ */
+export function printTestPlanTable(runsToExecute, options, testPlan) {
+  const rows = runsToExecute.map((runItem, index) => {
+    const caseOpts = resolveCaseOptions(runItem, options, testPlan);
+    const runNum = String(index + 1);
+    const caseName = caseOpts.case || 'unknown';
+    const mode = caseOpts.mode || 'simple';
+    const modelStr = mode === 'plan-execute'
+      ? `${caseOpts.modelPlanning} / ${caseOpts.modelExecution}`
+      : (caseOpts.model || 'unknown');
+
+    return { runNum, caseName, mode, modelStr };
+  });
+
+  let wRun = 'Run #'.length;
+  let wCase = 'Case'.length;
+  let wMode = 'Mode'.length;
+  let wModel = 'Model / Planning & Execution'.length;
+
+  for (const r of rows) {
+    if (r.runNum.length > wRun) wRun = r.runNum.length;
+    if (r.caseName.length > wCase) wCase = r.caseName.length;
+    if (r.mode.length > wMode) wMode = r.mode.length;
+    if (r.modelStr.length > wModel) wModel = r.modelStr.length;
+  }
+
+  const border = `+-${'-'.repeat(wRun)}-+-${'-'.repeat(wCase)}-+-${'-'.repeat(wMode)}-+-${'-'.repeat(wModel)}-+`;
+  const header = `| ${'Run #'.padEnd(wRun)} | ${'Case'.padEnd(wCase)} | ${'Mode'.padEnd(wMode)} | ${'Model / Planning & Execution'.padEnd(wModel)} |`;
+
+  console.log(`\n📋 Scheduled Test Case Runs Table:`);
+  console.log(border);
+  console.log(header);
+  console.log(border);
+  for (const r of rows) {
+    console.log(`| ${r.runNum.padEnd(wRun)} | ${r.caseName.padEnd(wCase)} | ${r.mode.padEnd(wMode)} | ${r.modelStr.padEnd(wModel)} |`);
+  }
+  console.log(border + '\n');
+}
+
+/**
  * Main application entry point for orchestrating test harness execution.
  * @param {string[]} [cliArgs] - Optional command-line arguments override
  */
@@ -56,28 +100,41 @@ export async function main(cliArgs) {
     .filter((item) => item.isDirectory() && !item.name.startsWith('.'))
     .map((item) => item.name);
 
-  let targetCases = [];
+  let runsToExecute = [];
   if (options.case) {
     if (!discoveredCases.includes(options.case)) {
       console.error(`❌ Error: Case "${options.case}" not found. Available cases: ${discoveredCases.join(', ')}`);
       process.exit(1);
     }
-    targetCases = [options.case];
+    if (testPlan && Array.isArray(testPlan.runs) && testPlan.runs.length > 0) {
+      const filtered = testPlan.runs.filter(
+        (r) => (r.case || r.name || r.caseName) === options.case
+      );
+      runsToExecute = filtered.length > 0 ? filtered : [{ case: options.case }];
+    } else {
+      runsToExecute = [{ case: options.case }];
+    }
+  } else if (testPlan && Array.isArray(testPlan.runs) && testPlan.runs.length > 0) {
+    runsToExecute = testPlan.runs;
   } else {
-    targetCases = discoveredCases;
+    runsToExecute = discoveredCases.map((c) => ({ case: c }));
   }
 
   console.log(`🔍 Discovered ${discoveredCases.length} total test cases in use-cases/ directory.`);
-  console.log(`🎯 Targeting test cases: ${targetCases.join(', ')}`);
+  console.log(`🎯 Executing ${runsToExecute.length} run(s) from plan/targets.`);
+  printTestPlanTable(runsToExecute, options, testPlan);
   console.log(`======================================================================`);
 
   const results = [];
   const errors = [];
 
-  for (const caseName of targetCases) {
+  for (const runItem of runsToExecute) {
+    const caseName = typeof runItem === 'object' && runItem !== null
+      ? (runItem.case || runItem.name || runItem.caseName)
+      : runItem;
     try {
       // Resolve per-case mode & model options using test plan config
-      const caseOptions = resolveCaseOptions(caseName, options, testPlan);
+      const caseOptions = resolveCaseOptions(runItem, options, testPlan);
       const result = await runTestCase(caseName, caseOptions, useCasesDir);
       results.push(result);
     } catch (err) {

@@ -78,6 +78,14 @@ describe('config module', () => {
     const parsedWithOverrides = parseArgs(['--model', 'gemini-flash']);
     const overriddenOpts = resolveCaseOptions('code-review', parsedWithOverrides, testPlan);
     assert.equal(overriddenOpts.model, 'gemini-flash');
+
+    // Passing direct run object
+    const runObj = { case: 'zero-to-one-vibe-coding', mode: 'simple', model: 'gemini-flash' };
+    const runObjOpts = resolveCaseOptions(runObj, parsedNoOverrides, testPlan);
+    assert.equal(runObjOpts.case, 'zero-to-one-vibe-coding');
+    assert.equal(runObjOpts.mode, 'simple');
+    assert.equal(runObjOpts.model, 'gemini-flash');
+    assert.equal(runObjOpts.delay, 4000);
   });
 
   it('should validate missing flag value and exit', () => {
@@ -117,6 +125,26 @@ describe('config module', () => {
       assert.throws(() => parseArgs(['--unknown-flag']), /process\.exit:1/);
     } finally {
       process.exit = originalExit;
+    }
+  });
+  it('should print test plan table without error', async () => {
+    const { printTestPlanTable } = await import('../src/main.js');
+    const runsToExecute = [
+      { case: 'zero-to-one-vibe-coding', mode: 'simple', model: 'claude-sonnet' },
+      { case: 'legacy-modernization', mode: 'plan-execute', modelPlanning: 'claude-sonnet', modelExecution: 'gemini-flash' },
+    ];
+
+    let logs = [];
+    const origLog = console.log;
+    console.log = (...args) => logs.push(args.join(' '));
+
+    try {
+      printTestPlanTable(runsToExecute, defaults, null);
+      assert.ok(logs.some((l) => l.includes('Scheduled Test Case Runs Table')));
+      assert.ok(logs.some((l) => l.includes('zero-to-one-vibe-coding')));
+      assert.ok(logs.some((l) => l.includes('claude-sonnet / gemini-flash')));
+    } finally {
+      console.log = origLog;
     }
   });
 });

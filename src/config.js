@@ -159,14 +159,18 @@ export function parseArgs(args = process.argv.slice(2)) {
 }
 
 /**
- * Merges defaults, test plan config, and CLI overrides for a specific test case.
- * @param {string} caseName - Name of test case directory
+ * Merges defaults, test plan config, and CLI overrides for a specific test case or run object.
+ * @param {string|object} caseInput - Name of test case directory or run object from testPlan.runs
  * @param {object} globalOptions - Options object returned by parseArgs
  * @param {object|null} testPlan - Parsed test-plan.json object
  * @returns {object} Options for this test case execution
  */
-export function resolveCaseOptions(caseName, globalOptions, testPlan) {
+export function resolveCaseOptions(caseInput, globalOptions, testPlan) {
   const explicitFlags = globalOptions._explicitFlags || new Set();
+  const caseName = typeof caseInput === 'object' && caseInput !== null
+    ? (caseInput.case || caseInput.name || caseInput.caseName)
+    : caseInput;
+
   const resolved = {
     ...defaults,
     agent: globalOptions.agent,
@@ -184,7 +188,9 @@ export function resolveCaseOptions(caseName, globalOptions, testPlan) {
 
   // 2. Apply case-specific config from testPlan if present
   let caseConfig = null;
-  if (testPlan) {
+  if (typeof caseInput === 'object' && caseInput !== null) {
+    caseConfig = caseInput;
+  } else if (testPlan) {
     if (Array.isArray(testPlan.runs)) {
       caseConfig = testPlan.runs.find(
         (r) => r.case === caseName || r.name === caseName || r.caseName === caseName
