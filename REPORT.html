@@ -1046,6 +1046,111 @@
       }
     }
 
+    // Model Color System for Charts & Badges
+    const PREDEFINED_MODEL_COLORS = {
+      'claude-sonnet': {
+        chartBg: 'rgba(139, 92, 246, 0.85)',
+        chartBorder: '#8b5cf6', // Violet / Purple
+        badgeBg: 'rgba(139, 92, 246, 0.18)',
+        badgeText: '#c084fc',
+        badgeBorder: 'rgba(139, 92, 246, 0.4)'
+      },
+      'claude-opus': {
+        chartBg: 'rgba(249, 115, 22, 0.85)', // Coral / Orange (Distinct from Sonnet)
+        chartBorder: '#f97316',
+        badgeBg: 'rgba(249, 115, 22, 0.18)',
+        badgeText: '#fb923c',
+        badgeBorder: 'rgba(249, 115, 22, 0.4)'
+      },
+      'claude-haiku': {
+        chartBg: 'rgba(236, 72, 153, 0.85)', // Fuchsia / Pink
+        chartBorder: '#ec4899',
+        badgeBg: 'rgba(236, 72, 153, 0.18)',
+        badgeText: '#f472b6',
+        badgeBorder: 'rgba(236, 72, 153, 0.4)'
+      },
+      'gemini-flash': {
+        chartBg: 'rgba(6, 182, 212, 0.85)', // Cyan / Teal
+        chartBorder: '#06b6d4',
+        badgeBg: 'rgba(6, 182, 212, 0.18)',
+        badgeText: '#22d3ee',
+        badgeBorder: 'rgba(6, 182, 212, 0.4)'
+      },
+      'gemini-pro': {
+        chartBg: 'rgba(59, 130, 246, 0.85)', // Royal Blue
+        chartBorder: '#3b82f6',
+        badgeBg: 'rgba(59, 130, 246, 0.18)',
+        badgeText: '#60a5fa',
+        badgeBorder: 'rgba(59, 130, 246, 0.4)'
+      },
+      'gpt-sol': {
+        chartBg: 'rgba(234, 179, 8, 0.85)', // Golden Sun Yellow
+        chartBorder: '#eab308',
+        badgeBg: 'rgba(234, 179, 8, 0.18)',
+        badgeText: '#fde047',
+        badgeBorder: 'rgba(234, 179, 8, 0.4)'
+      },
+      'gpt-terra': {
+        chartBg: 'rgba(16, 185, 129, 0.85)', // Terra Earth Green
+        chartBorder: '#10b981',
+        badgeBg: 'rgba(16, 185, 129, 0.18)',
+        badgeText: '#34d399',
+        badgeBorder: 'rgba(16, 185, 129, 0.4)'
+      },
+      'gpt-luna': {
+        chartBg: 'rgba(14, 165, 233, 0.85)', // Lunar Sky Blue
+        chartBorder: '#0ea5e9',
+        badgeBg: 'rgba(14, 165, 233, 0.18)',
+        badgeText: '#38bdf8',
+        badgeBorder: 'rgba(14, 165, 233, 0.4)'
+      }
+    };
+
+    const DYNAMIC_MODEL_PALETTE = [
+      { chartBg: 'rgba(236, 72, 153, 0.85)', chartBorder: '#ec4899', badgeBg: 'rgba(236, 72, 153, 0.18)', badgeText: '#f472b6', badgeBorder: 'rgba(236, 72, 153, 0.4)' }, // Pink
+      { chartBg: 'rgba(168, 85, 247, 0.85)', chartBorder: '#a855f7', badgeBg: 'rgba(168, 85, 247, 0.18)', badgeText: '#c084fc', badgeBorder: 'rgba(168, 85, 247, 0.4)' }, // Purple
+      { chartBg: 'rgba(14, 165, 233, 0.85)', chartBorder: '#0ea5e9', badgeBg: 'rgba(14, 165, 233, 0.18)', badgeText: '#38bdf8', badgeBorder: 'rgba(14, 165, 233, 0.4)' }, // Sky
+      { chartBg: 'rgba(20, 184, 166, 0.85)', chartBorder: '#14b8a6', badgeBg: 'rgba(20, 184, 166, 0.18)', badgeText: '#2dd4bf', badgeBorder: 'rgba(20, 184, 166, 0.4)' }, // Teal
+      { chartBg: 'rgba(132, 204, 22, 0.85)', chartBorder: '#84cc16', badgeBg: 'rgba(132, 204, 22, 0.18)', badgeText: '#a3e635', badgeBorder: 'rgba(132, 204, 22, 0.4)' }, // Lime
+      { chartBg: 'rgba(234, 179, 8, 0.85)',  chartBorder: '#eab308', badgeBg: 'rgba(234, 179, 8, 0.18)', badgeText: '#fde047', badgeBorder: 'rgba(234, 179, 8, 0.4)' },  // Yellow
+      { chartBg: 'rgba(244, 63, 94, 0.85)',  chartBorder: '#f43f5e', badgeBg: 'rgba(244, 63, 94, 0.18)', badgeText: '#fb7185', badgeBorder: 'rgba(244, 63, 94, 0.4)' },  // Rose
+      { chartBg: 'rgba(99, 102, 241, 0.85)', chartBorder: '#6366f1', badgeBg: 'rgba(99, 102, 241, 0.18)', badgeText: '#818cf8', badgeBorder: 'rgba(99, 102, 241, 0.4)' }, // Indigo
+    ];
+
+    const assignedDynamicModelColors = new Map();
+
+    function getModelColorConfig(modelName) {
+      if (!modelName) modelName = 'unknown';
+      const key = modelName.trim().toLowerCase();
+
+      // Direct match
+      if (PREDEFINED_MODEL_COLORS[key]) {
+        return PREDEFINED_MODEL_COLORS[key];
+      }
+
+      // Substring match for predefined keys
+      for (const preKey in PREDEFINED_MODEL_COLORS) {
+        if (key.includes(preKey) || preKey.includes(key)) {
+          return PREDEFINED_MODEL_COLORS[preKey];
+        }
+      }
+
+      if (assignedDynamicModelColors.has(key)) {
+        return assignedDynamicModelColors.get(key);
+      }
+
+      // Assign dynamic palette color deterministically for new/unknown models
+      const idx = assignedDynamicModelColors.size % DYNAMIC_MODEL_PALETTE.length;
+      const chosen = DYNAMIC_MODEL_PALETTE[idx];
+      assignedDynamicModelColors.set(key, chosen);
+      return chosen;
+    }
+
+    function getModelBadgeHtml(modelName) {
+      const cfg = getModelColorConfig(modelName);
+      return `<span class="badge" style="background: ${cfg.badgeBg}; color: ${cfg.badgeText}; border: 1px solid ${cfg.badgeBorder};">${modelName}</span>`;
+    }
+
     // Load data from reports-manifest.json with cache-busting
     async function loadDashboardData() {
       const refreshBtn = document.getElementById('refreshBtn');
@@ -1360,13 +1465,10 @@
           }
         }
 
-        const badgeClass = item.model.includes('claude') ? 'badge-claude' :
-                           item.model.includes('gemini') ? 'badge-gemini' : 'badge-model-default';
-
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${item.caseName}</strong></td>
-          <td><span class="badge ${badgeClass}">${item.model}</span></td>
+          <td>${getModelBadgeHtml(item.model)}</td>
           <td>${item.runsCount}</td>
           <td>
             <div class="metric-value ${spendClass}">${formatUSD(item.avgSpend)} ${spendTag}</div>
@@ -1437,28 +1539,12 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
       const useCases = Array.from(useCasesSet).sort();
       const models = Array.from(modelsSet).sort();
 
-      // Custom sleek color palette per model
-      const palette = [
-        { bg: 'rgba(139, 92, 246, 0.8)', border: '#8b5cf6' }, // Claude Purple
-        { bg: 'rgba(59, 130, 246, 0.8)', border: '#3b82f6' },  // Gemini Blue
-        { bg: 'rgba(6, 182, 212, 0.8)', border: '#06b6d4' },   // Cyan
-        { bg: 'rgba(245, 158, 11, 0.8)', border: '#f59e0b' },  // Amber
-        { bg: 'rgba(244, 63, 94, 0.8)', border: '#f43f5e' },   // Rose
-      ];
-
-      function getModelColor(modelName, index) {
-        if (modelName.includes('claude')) return palette[0];
-        if (modelName.includes('gemini-1')) return palette[1];
-        if (modelName.includes('gemini-2') || modelName.includes('flash')) return palette[2];
-        return palette[index % palette.length];
-      }
-
       // Build datasets for Spend and Efficiency
       const spendDatasets = [];
       const effDatasets = [];
 
       models.forEach((m, idx) => {
-        const color = getModelColor(m, idx);
+        const color = getModelColorConfig(m);
 
         const spendValues = useCases.map(uc => {
           const key = `${uc}||${m}`;
@@ -1479,8 +1565,8 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         spendDatasets.push({
           label: m,
           data: spendValues,
-          backgroundColor: color.bg,
-          borderColor: color.border,
+          backgroundColor: color.chartBg,
+          borderColor: color.chartBorder,
           borderWidth: 1,
           borderRadius: 6
         });
@@ -1488,8 +1574,8 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         effDatasets.push({
           label: m,
           data: effValues,
-          backgroundColor: color.bg,
-          borderColor: color.border,
+          backgroundColor: color.chartBg,
+          borderColor: color.chartBorder,
           borderWidth: 1,
           borderRadius: 6
         });
@@ -1597,10 +1683,7 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : ['unknown'];
         const isSuccess = Boolean(r.data.success);
 
-        const modelBadges = Array.from(new Set(models)).map(m => {
-          const bClass = m.includes('claude') ? 'badge-claude' : m.includes('gemini') ? 'badge-gemini' : 'badge-model-default';
-          return `<span class="badge ${bClass}">${m}</span>`;
-        }).join(' ');
+        const modelBadges = Array.from(new Set(models)).map(m => getModelBadgeHtml(m)).join(' ');
 
         const artifacts = r.artifacts || {};
 
