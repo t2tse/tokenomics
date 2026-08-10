@@ -341,3 +341,5 @@ bin/
 output-*/
 test-results-*.json
 reports-manifest.json
+kubeconfig.yaml
+microservices-demo/
