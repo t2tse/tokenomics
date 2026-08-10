@@ -1,0 +1,182 @@
+{
+  "defaults": {
+    "baseUrl": "http://localhost:4000",
+    "delay": 3000
+  },
+  "runs": [
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-opus"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-opus"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-opus"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-opus"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-opus"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "gemini-flash",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "gemini-flash",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "gemini-flash",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "one-to-two-feature-request",
+      "mode": "plan-execute",
+      "modelPlanning": "gemini-flash",
+      "modelExecution": "gemini-flash"
+    }
+  ]
+}

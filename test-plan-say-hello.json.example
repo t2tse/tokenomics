@@ -1,0 +1,108 @@
+{
+  "defaults": {
+    "baseUrl": "http://localhost:4000",
+    "delay": 3000
+  },
+  "runs": [
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "claude-sonnet"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    },
+    {
+      "case": "say-hello",
+      "mode": "simple",
+      "model": "gemini-flash"
+    }
+  ]
+}

@@ -1,0 +1,44 @@
+{
+  "defaults": {
+    "baseUrl": "http://localhost:4000",
+    "delay": 3000
+  },
+  "runs": [
+    {
+      "case": "code-review",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-opus"
+    },
+    {
+      "case": "code-review",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "code-review",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-opus",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "code-review",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "claude-sonnet"
+    },
+    {
+      "case": "code-review",
+      "mode": "plan-execute",
+      "modelPlanning": "claude-sonnet",
+      "modelExecution": "gemini-flash"
+    },
+    {
+      "case": "code-review",
+      "mode": "plan-execute",
+      "modelPlanning": "gemini-flash",
+      "modelExecution": "gemini-flash"
+    }
+  ]
+}
