@@ -1079,8 +1079,8 @@
     <!-- Tab Selection Buttons (Only visible in Tabbed Layout Mode) -->
     <div id="chartTabSelectorBar" style="display: none; margin-bottom: 1rem; gap: 0.5rem; flex-wrap: wrap;">
       <button class="btn btn-primary btn-sm active" id="btnTabSpend" onclick="setActiveChartTab('spend')">💰 Spend ($)</button>
-      <button class="btn btn-secondary btn-sm" id="btnTabEff" onclick="setActiveChartTab('eff')">🚀 Token Efficiency</button>
       <button class="btn btn-secondary btn-sm" id="btnTabDur" onclick="setActiveChartTab('dur')">⏱️ Avg Duration</button>
+      <button class="btn btn-secondary btn-sm" id="btnTabEff" onclick="setActiveChartTab('eff')">🚀 Token Efficiency</button>
     </div>
 
     <div class="charts-grid layout-grid" id="chartsGrid">
@@ -1096,18 +1096,6 @@
           </div>
         </div>
       </div>
-      <div class="card" id="cardEff">
-        <div class="section-title"><span>🚀</span> Token Efficiency (Tokens / USD) per Model by Use Case</div>
-        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-          <span>Chart updates dynamically based on Focus Use Case & Model View filters above.</span>
-          <span style="color: var(--accent-cyan); font-weight: 600;">💡 Click any model legend item below to show/hide</span>
-        </div>
-        <div class="chart-scroll-wrapper">
-          <div class="chart-inner-container" id="effChartWrapper">
-            <canvas id="efficiencyChart"></canvas>
-          </div>
-        </div>
-      </div>
       <div class="card" id="cardDur">
         <div class="section-title"><span>⏱️</span> Average Duration (s) per Model by Use Case</div>
         <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
@@ -1117,6 +1105,18 @@
         <div class="chart-scroll-wrapper">
           <div class="chart-inner-container" id="durChartWrapper">
             <canvas id="durationChart"></canvas>
+          </div>
+        </div>
+      </div>
+      <div class="card" id="cardEff">
+        <div class="section-title"><span>🚀</span> Token Efficiency (Tokens / USD) per Model by Use Case</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <span>Chart updates dynamically based on Focus Use Case & Model View filters above.</span>
+          <span style="color: var(--accent-cyan); font-weight: 600;">💡 Click any model legend item below to show/hide</span>
+        </div>
+        <div class="chart-scroll-wrapper">
+          <div class="chart-inner-container" id="effChartWrapper">
+            <canvas id="efficiencyChart"></canvas>
           </div>
         </div>
       </div>
@@ -2092,7 +2092,7 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
       const modelsCount = models.length;
       const calculatedWidth = totalBarGroups * Math.max(120, modelsCount * 28 + 30);
 
-      ['spendChartWrapper', 'effChartWrapper', 'durChartWrapper'].forEach(id => {
+      ['spendChartWrapper', 'durChartWrapper', 'effChartWrapper'].forEach(id => {
         const wrapper = document.getElementById(id);
         if (wrapper) {
           const parentCard = wrapper.parentElement;
@@ -2211,37 +2211,6 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         }
       });
 
-      // Efficiency Chart
-      if (efficiencyChartInstance) efficiencyChartInstance.destroy();
-
-      efficiencyChartInstance = new Chart(ctxEff, {
-        type: 'bar',
-        data: {
-          labels: useCases,
-          datasets: effDatasets
-        },
-        options: {
-          responsive: true,
-          maintainAspectRatio: false,
-          plugins: {
-            legend: {
-              display: true,
-              position: 'top',
-              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
-            },
-            tooltip: {
-              callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString()} tok/$`
-              }
-            }
-          },
-          scales: {
-            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
-          }
-        }
-      });
-
       // Duration Chart
       if (durationChartInstance) durationChartInstance.destroy();
 
@@ -2268,6 +2237,37 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
           },
           scales: {
             y: { ticks: { color: '#94a3b8', callback: v => v + 's' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
+          }
+        }
+      });
+
+      // Efficiency Chart
+      if (efficiencyChartInstance) efficiencyChartInstance.destroy();
+
+      efficiencyChartInstance = new Chart(ctxEff, {
+        type: 'bar',
+        data: {
+          labels: useCases,
+          datasets: effDatasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString()} tok/$`
+              }
+            }
+          },
+          scales: {
+            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
             x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
           }
         }
