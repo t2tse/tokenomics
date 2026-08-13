@@ -408,7 +408,8 @@
       width: 100%;
       border-collapse: separate;
       border-spacing: 0;
-      font-size: 0.875rem;
+      font-size: 0.8125rem; /* Compact 13px font */
+      table-layout: auto;
     }
 
     table.summary-table th {
@@ -416,14 +417,16 @@
       color: var(--text-secondary);
       font-weight: 600;
       text-align: left;
-      padding: 0.85rem 1rem;
+      padding: 0.55rem 0.45rem; /* Tightened padding for optimal column fit */
       border-bottom: 1px solid var(--card-border);
-      white-space: nowrap;
-      vertical-align: top;
+      white-space: normal; /* Allow controlled header wrapping */
+      word-break: normal;
+      vertical-align: bottom;
+      line-height: 1.25;
     }
 
     table.summary-table td {
-      padding: 0.85rem 1rem;
+      padding: 0.55rem 0.45rem; /* Tightened padding for optimal column fit */
       border-bottom: 1px solid rgba(255, 255, 255, 0.05);
       color: var(--text-primary);
       vertical-align: top;
@@ -513,15 +516,16 @@
     /* Range Box Styling for Min-Median-Max */
     .range-box {
       font-family: var(--font-mono);
-      font-size: 0.72rem;
+      font-size: 0.68rem;
       color: var(--text-secondary);
       background: rgba(15, 23, 42, 0.5);
-      padding: 0.35rem 0.55rem;
-      border-radius: 6px;
+      padding: 0.25rem 0.45rem;
+      border-radius: 5px;
       border: 1px solid rgba(255, 255, 255, 0.06);
-      margin-top: 0.35rem;
-      line-height: 1.45;
-      white-space: pre;
+      margin-top: 0.25rem;
+      line-height: 1.35;
+      white-space: pre-line;
+      word-break: break-word;
     }
 
     /* Metric Highlight */
@@ -963,6 +967,16 @@
             Average total wall-clock elapsed time (in seconds) required for an agent to finish a benchmark task (Lower is better). Includes Min-Median-Max range and Plan/Exec phase breakdown for plan-execute workflows.
           </div>
         </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>API Requests</span>
+            <span class="glossary-tag tag-metric">Requests</span>
+          </div>
+          <div class="glossary-item-desc">
+            <code>Total API Requests</code>. Sum of HTTP/API calls made to model endpoints during execution, with breakdown of successful vs failed requests.
+          </div>
+        </div>
       </div>
     </div>
 
@@ -1041,6 +1055,10 @@
                 Avg Completion Ratio <span id="sort-icon-avgCompRatio"></span>
                 <span class="tooltip-icon" data-tooltip-title="Avg Completion Ratio (%)" data-tooltip-desc="(Completion Tokens / Total Tokens) * 100. Percentage of generated output tokens vs input context. Lower ratio indicates reading efficiency; higher ratio indicates generation density.">ℹ️</span>
               </th>
+              <th onclick="sortTableBy('avgTotalRequests')" style="cursor: pointer; user-select: none;" title="Click to sort by Requests">
+                Avg Requests <span id="sort-icon-avgTotalRequests"></span>
+                <span class="tooltip-icon" data-tooltip-title="Avg API Requests" data-tooltip-desc="Average total API requests per run, with breakdown of successful and failed requests.">ℹ️</span>
+              </th>
               <th onclick="sortTableBy('avgDuration')" style="cursor: pointer; user-select: none;" title="Click to sort by Avg Duration">
                 Avg Duration <span id="sort-icon-avgDuration"></span>
                 <span class="tooltip-icon" data-tooltip-title="Avg Duration (s)" data-tooltip-desc="Average wall-clock time in seconds to complete the benchmark task with Min-Median-Max range and Plan/Exec phase breakdown. Lower is better.">ℹ️</span>
@@ -1081,6 +1099,7 @@
       <button class="btn btn-primary btn-sm active" id="btnTabSpend" onclick="setActiveChartTab('spend')">💰 Spend ($)</button>
       <button class="btn btn-secondary btn-sm" id="btnTabDur" onclick="setActiveChartTab('dur')">⏱️ Avg Duration</button>
       <button class="btn btn-secondary btn-sm" id="btnTabEff" onclick="setActiveChartTab('eff')">🚀 Token Efficiency</button>
+      <button class="btn btn-secondary btn-sm" id="btnTabReq" onclick="setActiveChartTab('req')">📡 API Requests</button>
     </div>
 
     <div class="charts-grid layout-grid" id="chartsGrid">
@@ -1120,6 +1139,18 @@
           </div>
         </div>
       </div>
+      <div class="card" id="cardReq">
+        <div class="section-title"><span>📡</span> Average API Requests per Model by Use Case</div>
+        <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+          <span>Chart updates dynamically based on Focus Use Case & Model View filters above.</span>
+          <span style="color: var(--accent-cyan); font-weight: 600;">💡 Click any model legend item below to show/hide</span>
+        </div>
+        <div class="chart-scroll-wrapper">
+          <div class="chart-inner-container" id="reqChartWrapper">
+            <canvas id="requestsChart"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- Detailed Test Runs & Artifacts Section -->
@@ -1155,6 +1186,7 @@
               <th>Model(s)</th>
               <th>Spend ($)</th>
               <th>Total Tokens</th>
+              <th>API Requests</th>
               <th>Duration (s)</th>
               <th>Status</th>
               <th>Output Artifacts</th>
@@ -1191,8 +1223,9 @@
     let spendChartInstance = null;
     let efficiencyChartInstance = null;
     let durationChartInstance = null;
+    let requestsChartInstance = null;
     let currentChartLayout = 'grid'; // 'grid', 'full', 'tabs'
-    let currentActiveTab = 'spend';  // 'spend', 'eff', 'dur'
+    let currentActiveTab = 'spend';  // 'spend', 'eff', 'dur', 'req'
     let summarySortColumn = 'caseName';
     let summarySortDirection = 'asc';
 
@@ -1201,7 +1234,7 @@
         summarySortDirection = summarySortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         summarySortColumn = columnKey;
-        summarySortDirection = ['avgEff', 'avgTokSec', 'successPct'].includes(columnKey) ? 'desc' : 'asc';
+        summarySortDirection = ['avgEff', 'avgTokSec', 'avgTotalRequests', 'successPct'].includes(columnKey) ? 'desc' : 'asc';
       }
       renderHighLevelSummary();
     }
@@ -1234,12 +1267,14 @@
       const cards = {
         spend: document.getElementById('cardSpend'),
         eff: document.getElementById('cardEff'),
-        dur: document.getElementById('cardDur')
+        dur: document.getElementById('cardDur'),
+        req: document.getElementById('cardReq')
       };
 
       document.getElementById('btnTabSpend').className = tab === 'spend' ? 'btn btn-primary btn-sm active' : 'btn btn-secondary btn-sm';
       document.getElementById('btnTabEff').className = tab === 'eff' ? 'btn btn-primary btn-sm active' : 'btn btn-secondary btn-sm';
       document.getElementById('btnTabDur').className = tab === 'dur' ? 'btn btn-primary btn-sm active' : 'btn btn-secondary btn-sm';
+      document.getElementById('btnTabReq').className = tab === 'req' ? 'btn btn-primary btn-sm active' : 'btn btn-secondary btn-sm';
 
       Object.keys(cards).forEach(k => {
         if (cards[k]) {
@@ -1700,6 +1735,9 @@
       let totalTokens = 0;
       let promptTokens = 0;
       let completionTokens = 0;
+      let totalRequests = 0;
+      let totalSuccessfulRequests = 0;
+      let totalFailedRequests = 0;
       let totalRunsCount = globalManifestData.runs.length;
       let successRunsCount = 0;
       let effList = [];
@@ -1717,6 +1755,9 @@
         totalTokens += tokens;
         promptTokens += metrics.promptTokens || 0;
         completionTokens += metrics.completionTokens || 0;
+        totalRequests += metrics.totalRequests || 0;
+        totalSuccessfulRequests += metrics.successfulRequests || 0;
+        totalFailedRequests += metrics.failedRequests || 0;
         if (spend > 0) effList.push(tokens / spend);
       });
 
@@ -1734,7 +1775,7 @@
       document.getElementById('kpiAvgEfficiency').innerText = `${formatInt(avgEfficiency)} tok/$`;
 
       document.getElementById('kpiTotalRuns').innerText = totalRunsCount;
-      document.getElementById('kpiSuccessRate').innerText = `${successRatePct}% Success Rate (${successRunsCount}/${totalRunsCount})`;
+      document.getElementById('kpiSuccessRate').innerText = `${successRatePct}% Success Rate (${successRunsCount}/${totalRunsCount}) · ${formatInt(totalRequests)} reqs (${formatInt(totalSuccessfulRequests)} succ / ${formatInt(totalFailedRequests)} fail)`;
     }
 
     // High Level Summary grouped by (Use Case, Model Config) with Best/Worst Highlights per Use Case
@@ -1743,7 +1784,7 @@
       tbody.innerHTML = '';
 
       if (!globalManifestData || !globalManifestData.runs || globalManifestData.runs.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No benchmark data available.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="10" class="empty-state">No benchmark data available.</td></tr>`;
         return;
       }
 
@@ -1787,6 +1828,9 @@
             efficiencies: [], // tokens / spend
             tokensPerSec: [],
             completionRatios: [], // completionTokens / totalTokens
+            requestsList: [],
+            successfulRequestsList: [],
+            failedRequestsList: [],
           });
         }
 
@@ -1800,6 +1844,9 @@
         grp.spends.push(spend);
         grp.tokensList.push(tokens);
         grp.durations.push(duration);
+        grp.requestsList.push(metrics.totalRequests || 0);
+        grp.successfulRequestsList.push(metrics.successfulRequests || 0);
+        grp.failedRequestsList.push(metrics.failedRequests || 0);
 
         const modeInfo = getRunModeInfo(r);
         const subRuns = (r.data && r.data.runs) || [];
@@ -1829,6 +1876,7 @@
             avgSpend: 0, minSpend: 0, medianSpend: 0, maxSpend: 0,
             avgEff: 0, minEff: 0, medianEff: 0, maxEff: 0,
             avgTokSec: 0, avgCompRatio: 0,
+            avgTotalRequests: 0, avgSuccessfulRequests: 0, avgFailedRequests: 0,
             avgDuration: 0, minDuration: 0, medianDuration: 0, maxDuration: 0,
             hasPlanExec: false, avgPlanDuration: null, avgExecDuration: null,
             successPct
@@ -1848,6 +1896,10 @@
 
         const avgTokSec = grp.tokensPerSec.length > 0 ? (grp.tokensPerSec.reduce((a, b) => a + b, 0) / grp.tokensPerSec.length) : 0;
         const avgCompRatio = grp.completionRatios.length > 0 ? (grp.completionRatios.reduce((a, b) => a + b, 0) / grp.completionRatios.length) : 0;
+
+        const avgTotalRequests = grp.requestsList.length > 0 ? (grp.requestsList.reduce((a, b) => a + b, 0) / grp.requestsList.length) : 0;
+        const avgSuccessfulRequests = grp.successfulRequestsList.length > 0 ? (grp.successfulRequestsList.reduce((a, b) => a + b, 0) / grp.successfulRequestsList.length) : 0;
+        const avgFailedRequests = grp.failedRequestsList.length > 0 ? (grp.failedRequestsList.reduce((a, b) => a + b, 0) / grp.failedRequestsList.length) : 0;
         
         const avgDuration = grp.durations.reduce((a, b) => a + b, 0) / grp.durations.length;
         const minDuration = Math.min(...grp.durations);
@@ -1864,6 +1916,7 @@
           avgSpend, minSpend, medianSpend, maxSpend,
           avgEff, minEff, medianEff, maxEff,
           avgTokSec, avgCompRatio,
+          avgTotalRequests, avgSuccessfulRequests, avgFailedRequests,
           avgDuration, minDuration, medianDuration, maxDuration,
           hasPlanExec, avgPlanDuration, avgExecDuration,
           successPct
@@ -1906,7 +1959,7 @@
       });
 
       // Update header sort direction icons
-      const sortCols = ['caseName', 'modelKey', 'totalExecutedRuns', 'avgSpend', 'avgEff', 'avgTokSec', 'avgCompRatio', 'avgDuration', 'successPct'];
+      const sortCols = ['caseName', 'modelKey', 'totalExecutedRuns', 'avgSpend', 'avgEff', 'avgTokSec', 'avgCompRatio', 'avgTotalRequests', 'avgDuration', 'successPct'];
       sortCols.forEach(col => {
         const iconEl = document.getElementById(`sort-icon-${col}`);
         if (iconEl) {
@@ -2006,18 +2059,23 @@
           <td>${item.totalExecutedRuns}</td>
           <td>
             <div class="metric-value ${spendClass}">${formatUSD(item.avgSpend)} ${spendTag}</div>
-            <div class="range-box">Min:    ${formatUSD(item.minSpend)}
-Median: ${formatUSD(item.medianSpend)}
-Max:    ${formatUSD(item.maxSpend)}</div>
+            <div class="range-box">Min: ${formatUSD(item.minSpend)}
+Med: ${formatUSD(item.medianSpend)}
+Max: ${formatUSD(item.maxSpend)}</div>
           </td>
           <td>
             <div class="metric-value ${effClass}">${formatInt(Math.round(item.avgEff))} tok/$ ${effTag}</div>
-            <div class="range-box">Min:    ${formatInt(Math.round(item.minEff))} tok/$
-Median: ${formatInt(Math.round(item.medianEff))} tok/$
-Max:    ${formatInt(Math.round(item.maxEff))} tok/$</div>
+            <div class="range-box">Min: ${formatInt(Math.round(item.minEff))} tok/$
+Med: ${formatInt(Math.round(item.medianEff))} tok/$
+Max: ${formatInt(Math.round(item.maxEff))} tok/$</div>
           </td>
           <td><span class="metric-value ${tokSecClass}">${Math.round(item.avgTokSec)} tok/s ${tokSecTag}</span></td>
           <td><span class="metric-value">${item.avgCompRatio.toFixed(1)}%</span></td>
+          <td>
+            <div class="metric-value">${item.avgTotalRequests % 1 === 0 ? item.avgTotalRequests : item.avgTotalRequests.toFixed(1)} reqs</div>
+            <div class="range-box">Succ: ${item.avgSuccessfulRequests % 1 === 0 ? item.avgSuccessfulRequests : item.avgSuccessfulRequests.toFixed(1)}
+Fail: ${item.avgFailedRequests % 1 === 0 ? item.avgFailedRequests : item.avgFailedRequests.toFixed(1)}</div>
+          </td>
           <td>
             <div class="metric-value ${durClass}">
               ${item.avgDuration.toFixed(1)}s
@@ -2025,9 +2083,9 @@ Max:    ${formatInt(Math.round(item.maxEff))} tok/$</div>
               ${durTag}
             </div>
             ${item.hasPlanExec ? renderPlanExecBreakdownBox(item.avgPlanDuration, item.avgExecDuration) : ''}
-            <div class="range-box">Min:    ${item.minDuration.toFixed(1)}s
-Median: ${item.medianDuration.toFixed(1)}s
-Max:    ${item.maxDuration.toFixed(1)}s</div>
+            <div class="range-box">Min: ${item.minDuration.toFixed(1)}s
+Med: ${item.medianDuration.toFixed(1)}s
+Max: ${item.maxDuration.toFixed(1)}s</div>
           </td>
           <td>
             <span class="badge ${item.successCount === item.totalExecutedRuns ? 'status-success' : 'status-fail'} ${succClass}">
@@ -2075,12 +2133,15 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         modelsSet.add(m);
         const key = `${cName}||${m}`;
         if (!caseModelData.has(key)) {
-          caseModelData.set(key, { spends: [], tokens: [], durations: [], efficiencies: [] });
+          caseModelData.set(key, { spends: [], tokens: [], durations: [], efficiencies: [], requests: [], successfulRequests: [], failedRequests: [] });
         }
         const item = caseModelData.get(key);
         item.spends.push(spend);
         item.tokens.push(tokens);
         item.durations.push(duration);
+        item.requests.push(metrics.totalRequests || 0);
+        item.successfulRequests.push(metrics.successfulRequests || 0);
+        item.failedRequests.push(metrics.failedRequests || 0);
         if (spend > 0) item.efficiencies.push(tokens / spend);
       });
 
@@ -2092,7 +2153,7 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
       const modelsCount = models.length;
       const calculatedWidth = totalBarGroups * Math.max(120, modelsCount * 28 + 30);
 
-      ['spendChartWrapper', 'durChartWrapper', 'effChartWrapper'].forEach(id => {
+      ['spendChartWrapper', 'durChartWrapper', 'effChartWrapper', 'reqChartWrapper'].forEach(id => {
         const wrapper = document.getElementById(id);
         if (wrapper) {
           const parentCard = wrapper.parentElement;
@@ -2105,14 +2166,16 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         }
       });
 
-      // Build datasets for Spend, Efficiency, and Duration
+      // Build datasets for Spend, Efficiency, Duration, and API Requests
       const spendDatasets = [];
       const effDatasets = [];
       const durationDatasets = [];
+      const reqDatasets = [];
 
       const ctxSpend = document.getElementById('spendChart').getContext('2d');
       const ctxEff = document.getElementById('efficiencyChart').getContext('2d');
       const ctxDuration = document.getElementById('durationChart').getContext('2d');
+      const ctxRequests = document.getElementById('requestsChart').getContext('2d');
 
       models.forEach((m, idx) => {
         const color = getModelColorConfig(m);
@@ -2139,9 +2202,31 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
           return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
         });
 
+        const reqValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).requests || [];
+          return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
+        const succReqValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).successfulRequests || [];
+          return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
+        const failReqValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).failedRequests || [];
+          return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
         const spendBg = color.isInteractive ? createStripedPattern(ctxSpend, color.chartBg) : color.chartBg;
         const effBg = color.isInteractive ? createStripedPattern(ctxEff, color.chartBg) : color.chartBg;
         const durationBg = color.isInteractive ? createStripedPattern(ctxDuration, color.chartBg) : color.chartBg;
+        const reqBg = color.isInteractive ? createStripedPattern(ctxRequests, color.chartBg) : color.chartBg;
 
         spendDatasets.push({
           label: m,
@@ -2171,6 +2256,20 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
           label: m,
           data: durationValues,
           backgroundColor: durationBg,
+          borderColor: color.chartBorder,
+          borderWidth: color.isInteractive ? 2 : 1,
+          borderRadius: 6,
+          maxBarThickness: 64,
+          categoryPercentage: 0.8,
+          barPercentage: 0.85
+        });
+
+        reqDatasets.push({
+          label: m,
+          data: reqValues,
+          succData: succReqValues,
+          failData: failReqValues,
+          backgroundColor: reqBg,
           borderColor: color.chartBorder,
           borderWidth: color.isInteractive ? 2 : 1,
           borderRadius: 6,
@@ -2272,6 +2371,44 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
           }
         }
       });
+
+      // Requests Chart
+      if (requestsChartInstance) requestsChartInstance.destroy();
+
+      requestsChartInstance = new Chart(ctxRequests, {
+        type: 'bar',
+        data: {
+          labels: useCases,
+          datasets: reqDatasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: true,
+              position: 'top',
+              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+            },
+            tooltip: {
+              callbacks: {
+                label: ctx => {
+                  const total = Number(ctx.raw).toFixed(1);
+                  const dataset = ctx.dataset;
+                  const index = ctx.dataIndex;
+                  const succ = dataset.succData ? Number(dataset.succData[index]).toFixed(1) : '0';
+                  const fail = dataset.failData ? Number(dataset.failData[index]).toFixed(1) : '0';
+                  return `${dataset.label}: ${total} reqs (${succ} succ / ${fail} fail)`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: { ticks: { color: '#94a3b8', callback: v => v + ' reqs' }, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
+          }
+        }
+      });
     }
 
     // Detailed Runs Table with filtering
@@ -2309,7 +2446,7 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
       });
 
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="8" class="empty-state">No matching test runs found.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="9" class="empty-state">No matching test runs found.</td></tr>`;
         return;
       }
 
@@ -2318,6 +2455,10 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : ['unknown'];
         const isSuccess = Boolean(r.data.success);
         const modeInfo = getRunModeInfo(r);
+
+        const totalReq = metrics.totalRequests || 0;
+        const succReq = metrics.successfulRequests || 0;
+        const failReq = metrics.failedRequests || 0;
 
         const modelBadges = Array.from(new Set(models)).map(m => getModelBadgeHtml(m)).join(' ');
 
@@ -2387,6 +2528,10 @@ Max:    ${item.maxDuration.toFixed(1)}s</div>
             <div class="metric-value">${formatInt(metrics.totalTokens)}</div>
             <div class="range-box">p: ${formatInt(metrics.promptTokens)}
 c: ${formatInt(metrics.completionTokens)}</div>
+          </td>
+          <td>
+            <div class="metric-value">${formatInt(totalReq)}</div>
+            <div class="range-box">Succ: ${formatInt(succReq)} | Fail: ${formatInt(failReq)}</div>
           </td>
           <td>
             <div class="metric-value">
