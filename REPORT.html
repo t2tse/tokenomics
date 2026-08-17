@@ -1468,13 +1468,45 @@
         baseColor = assignedDynamicModelColors.get(baseKey);
       }
 
-      // Single model substring match for predefined keys (if not combo)
+      // Single model substring & pattern match for predefined keys (if not combo)
       const isCombo = baseKey.includes('/') || baseKey.includes(' / ');
       if (!baseColor && !isCombo) {
+        // Direct substring check first
         for (const preKey in PREDEFINED_MODEL_COLORS) {
           if (baseKey === preKey || baseKey.includes(preKey) || preKey.includes(baseKey)) {
             baseColor = PREDEFINED_MODEL_COLORS[preKey];
             break;
+          }
+        }
+
+        // Family & tier pattern recognition for versioned strings (e.g. gemini-3.7-flash, claude-sonnet-4-6, gpt-5.6-sol)
+        if (!baseColor) {
+          if (baseKey.startsWith('gemini') || baseKey.includes('gemini')) {
+            if (baseKey.includes('flash')) {
+              baseColor = PREDEFINED_MODEL_COLORS['gemini-flash'];
+            } else if (baseKey.includes('pro')) {
+              baseColor = PREDEFINED_MODEL_COLORS['gemini-pro'];
+            } else {
+              baseColor = PREDEFINED_MODEL_COLORS['gemini-flash'];
+            }
+          } else if (baseKey.startsWith('claude') || baseKey.includes('claude')) {
+            if (baseKey.includes('sonnet')) {
+              baseColor = PREDEFINED_MODEL_COLORS['claude-sonnet'];
+            } else if (baseKey.includes('opus')) {
+              baseColor = PREDEFINED_MODEL_COLORS['claude-opus'];
+            } else if (baseKey.includes('haiku')) {
+              baseColor = PREDEFINED_MODEL_COLORS['claude-haiku'];
+            } else {
+              baseColor = PREDEFINED_MODEL_COLORS['claude-sonnet'];
+            }
+          } else if (baseKey.startsWith('gpt') || baseKey.includes('gpt') || baseKey.includes('openai')) {
+            if (baseKey.includes('sol')) {
+              baseColor = PREDEFINED_MODEL_COLORS['gpt-sol'];
+            } else if (baseKey.includes('terra')) {
+              baseColor = PREDEFINED_MODEL_COLORS['gpt-terra'];
+            } else if (baseKey.includes('luna')) {
+              baseColor = PREDEFINED_MODEL_COLORS['gpt-luna'];
+            }
           }
         }
       }

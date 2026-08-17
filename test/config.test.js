@@ -147,5 +147,17 @@ describe('config module', () => {
       console.log = origLog;
     }
   });
+
+  it('should parse versioned model flags correctly', () => {
+    const opts = parseArgs([
+      '--model', 'gemini-3.7-flash',
+      '--model-planning', 'claude-sonnet-4-6',
+      '--model-execution', 'gpt-5.6-terra'
+    ]);
+    assert.equal(opts.model, 'gemini-3.7-flash');
+    assert.equal(opts.modelPlanning, 'claude-sonnet-4-6');
+    assert.equal(opts.modelExecution, 'gpt-5.6-terra');
+  });
 });
+
 
