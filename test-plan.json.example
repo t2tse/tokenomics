@@ -18,7 +18,8 @@
     {
       "case": "one-to-two-bug-fix",
       "mode": "simple",
-      "model": "gemini-flash"
+      "model": "gemini-flash",
+      "yolo": true
     },
     {
       "case": "one-to-two-feature-request",

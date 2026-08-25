@@ -26,9 +26,14 @@ export async function runTestCase(caseName, options, parentDir) {
   const caseDir = path.join(useCasesDir, caseName);
   const isInteractive = Boolean(options.interactive);
   const isPlanExecute = !isInteractive && options.mode === 'plan-execute';
+  const isYolo = !isInteractive && Boolean(options.yolo);
+  const execMode = isYolo ? 'bypassPermissions' : 'auto';
+  const modeLabel = isInteractive
+    ? 'INTERACTIVE'
+    : (isYolo ? `${options.mode.toUpperCase()} (YOLO)` : options.mode.toUpperCase());
 
   console.log(`\n======================================================================`);
-  console.log(`🚀 [START] Running Test Case: "${caseName}" (Mode: ${isInteractive ? 'INTERACTIVE' : options.mode.toUpperCase()})`);
+  console.log(`🚀 [START] Running Test Case: "${caseName}" (Mode: ${modeLabel})`);
   console.log(`======================================================================`);
 
   if (!fs.existsSync(caseDir)) {
@@ -126,40 +131,40 @@ export async function runTestCase(caseName, options, parentDir) {
         outputFormat: options.outputFormat,
         interactive: false,
       });
-      agentRuns.push({ phase: 'planning', model: options.modelPlanning, ...planRun });
+      agentRuns.push({ phase: 'planning', model: options.modelPlanning, mode: 'plan', ...planRun });
 
       // Phase 2: Execution
-      console.log(`🤖 [AGENT] Starting Plan-Execute Phase 2 (Execution, ${options.agent || DEFAULT_AGENT}) with model: ${options.modelExecution}`);
+      console.log(`🤖 [AGENT] Starting Plan-Execute Phase 2 (Execution, ${options.agent || DEFAULT_AGENT}${isYolo ? ' [YOLO]' : ''}) with model: ${options.modelExecution}`);
       const execRun = await runCodingAgent({
         agent: options.agent,
         caseDir: outputDir,
         caseName,
         secretKey,
         model: options.modelExecution,
-        mode: 'auto',
+        mode: execMode,
         promptText: promptTextExec,
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
         interactive: false,
         resume: true,
       });
-      agentRuns.push({ phase: 'execution', model: options.modelExecution, ...execRun });
+      agentRuns.push({ phase: 'execution', model: options.modelExecution, mode: execMode, ...execRun });
     } else {
       // Simple Run (Headless)
-      console.log(`🤖 [AGENT] Starting Simple Phase (${options.agent || DEFAULT_AGENT}) with model: ${options.model}`);
+      console.log(`🤖 [AGENT] Starting Simple Phase (${options.agent || DEFAULT_AGENT}${isYolo ? ' [YOLO]' : ''}) with model: ${options.model}`);
       const run = await runCodingAgent({
         agent: options.agent,
         caseDir: outputDir,
         caseName,
         secretKey,
         model: options.model,
-        mode: 'auto',
+        mode: execMode,
         promptText: promptTextSimple,
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
         interactive: false,
       });
-      agentRuns.push({ phase: 'execution', model: options.model, ...run });
+      agentRuns.push({ phase: 'execution', model: options.model, mode: execMode, ...run });
     }
   } catch (err) {
     console.error(`❌ [AGENT] Execution error during run: ${err.message}`);
@@ -231,6 +236,7 @@ export async function runTestCase(caseName, options, parentDir) {
       caseName,
       mode: isInteractive ? 'interactive' : (isPlanExecute ? 'plan-execute' : 'simple'),
       interactive: isInteractive,
+      yolo: Boolean(options.yolo),
       success,
       totalWallClockDurationSeconds: totalWallClockDurationMs / 1000,
       metrics: {
@@ -247,6 +253,7 @@ export async function runTestCase(caseName, options, parentDir) {
       runs: agentRuns.map((run) => ({
         phase: run.phase,
         model: run.model,
+        ...(run.mode ? { mode: run.mode } : {}),
         wallClockDurationSeconds: run.durationMs / 1000,
         success: run.success,
         exitCode: run.code,

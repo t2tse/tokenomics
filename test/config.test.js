@@ -53,6 +53,14 @@ describe('config module', () => {
     assert.equal(optsNoWalkthrough.walkthrough, false);
   });
 
+  it('should parse --yolo flag correctly', () => {
+    const optsDefault = parseArgs([]);
+    assert.equal(optsDefault.yolo, false);
+
+    const optsYolo = parseArgs(['--yolo']);
+    assert.equal(optsYolo.yolo, true);
+  });
+
   it('resolveCaseOptions merges testPlan settings and CLI overrides', () => {
     const testPlan = {
       defaults: { delay: 4000 },
@@ -80,12 +88,18 @@ describe('config module', () => {
     assert.equal(overriddenOpts.model, 'gemini-flash');
 
     // Passing direct run object
-    const runObj = { case: 'zero-to-one-vibe-coding', mode: 'simple', model: 'gemini-flash' };
+    const runObj = { case: 'zero-to-one-vibe-coding', mode: 'simple', model: 'gemini-flash', yolo: true };
     const runObjOpts = resolveCaseOptions(runObj, parsedNoOverrides, testPlan);
     assert.equal(runObjOpts.case, 'zero-to-one-vibe-coding');
     assert.equal(runObjOpts.mode, 'simple');
     assert.equal(runObjOpts.model, 'gemini-flash');
     assert.equal(runObjOpts.delay, 4000);
+    assert.equal(runObjOpts.yolo, true);
+
+    // CLI override for yolo
+    const parsedYoloOverride = parseArgs(['--yolo']);
+    const cliYoloOpts = resolveCaseOptions('code-review', parsedYoloOverride, testPlan);
+    assert.equal(cliYoloOpts.yolo, true);
   });
 
   it('should validate missing flag value and exit', () => {
@@ -127,10 +141,10 @@ describe('config module', () => {
       process.exit = originalExit;
     }
   });
-  it('should print test plan table without error', async () => {
+  it('should print test plan table without error including yolo mode', async () => {
     const { printTestPlanTable } = await import('../src/main.js');
     const runsToExecute = [
-      { case: 'zero-to-one-vibe-coding', mode: 'simple', model: 'claude-sonnet' },
+      { case: 'zero-to-one-vibe-coding', mode: 'simple', model: 'claude-sonnet', yolo: true },
       { case: 'legacy-modernization', mode: 'plan-execute', modelPlanning: 'claude-sonnet', modelExecution: 'gemini-flash' },
     ];
 
@@ -142,6 +156,7 @@ describe('config module', () => {
       printTestPlanTable(runsToExecute, defaults, null);
       assert.ok(logs.some((l) => l.includes('Scheduled Test Case Runs Table')));
       assert.ok(logs.some((l) => l.includes('zero-to-one-vibe-coding')));
+      assert.ok(logs.some((l) => l.includes('simple (yolo)')));
       assert.ok(logs.some((l) => l.includes('claude-sonnet / gemini-flash')));
     } finally {
       console.log = origLog;

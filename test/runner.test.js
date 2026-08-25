@@ -392,6 +392,131 @@ describe('runner & case discovery', () => {
       fs.rmSync(tmpParent, { recursive: true, force: true });
     }
   });
+
+  it('should pass bypassPermissions mode when yolo is enabled in simple mode', async () => {
+    const fs = await import('fs');
+    const os = await import('os');
+    const { runTestCase } = await import('../src/runner.js');
+    const { registerAgent } = await import('../src/agents/agent.js');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url.includes('/user/new')) {
+        return { ok: true, json: async () => ({ user_id: 'test-user-id', key: 'sk-12345678901234' }) };
+      }
+      if (url.includes('/key/generate')) {
+        return { ok: true, json: async () => ({ key: 'sk-virtual-key' }) };
+      }
+      if (url.includes('/user/info')) {
+        return { ok: true, json: async () => ({ user_info: { spend: 0 } }) };
+      }
+      return { ok: true, json: async () => ({ metadata: {} }) };
+    };
+
+    const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'tokenomics-test-yolo-simple-'));
+    const useCasesDir = path.join(tmpParent, 'use-cases');
+    const caseDir = path.join(useCasesDir, 'yolo-simple-case');
+    fs.mkdirSync(caseDir, { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'PROMPT.md'), 'Build yolo app.');
+
+    let capturedMode = null;
+    registerAgent('mock-yolo-simple-agent', (params) => {
+      capturedMode = params.mode;
+      return {
+        command: 'node',
+        args: ['-e', 'process.exit(0);'],
+        env: process.env,
+        displayCmd: 'node yolo simple test',
+        interactive: false,
+      };
+    });
+
+    try {
+      const options = {
+        agent: 'mock-yolo-simple-agent',
+        mode: 'simple',
+        interactive: false,
+        yolo: true,
+        model: 'claude-sonnet',
+        baseUrl: 'http://localhost:4000',
+        masterKey: 'sk-test',
+        delay: 0,
+      };
+
+      const result = await runTestCase('yolo-simple-case', options, tmpParent);
+      assert.equal(result.success, true);
+      assert.equal(result.yolo, true);
+      assert.equal(capturedMode, 'bypassPermissions');
+      assert.equal(result.runs[0].mode, 'bypassPermissions');
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(tmpParent, { recursive: true, force: true });
+    }
+  });
+
+  it('should pass plan mode in Phase 1 and bypassPermissions in Phase 2 for plan-execute mode with yolo', async () => {
+    const fs = await import('fs');
+    const os = await import('os');
+    const { runTestCase } = await import('../src/runner.js');
+    const { registerAgent } = await import('../src/agents/agent.js');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url.includes('/user/new')) {
+        return { ok: true, json: async () => ({ user_id: 'test-user-id', key: 'sk-12345678901234' }) };
+      }
+      if (url.includes('/key/generate')) {
+        return { ok: true, json: async () => ({ key: 'sk-virtual-key' }) };
+      }
+      if (url.includes('/user/info')) {
+        return { ok: true, json: async () => ({ user_info: { spend: 0 } }) };
+      }
+      return { ok: true, json: async () => ({ metadata: {} }) };
+    };
+
+    const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'tokenomics-test-yolo-plan-exec-'));
+    const useCasesDir = path.join(tmpParent, 'use-cases');
+    const caseDir = path.join(useCasesDir, 'yolo-plan-exec-case');
+    fs.mkdirSync(caseDir, { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'PROMPT-PLAN.md'), 'Plan task.');
+    fs.writeFileSync(path.join(caseDir, 'PROMPT-EXEC.md'), 'Execute task.');
+
+    const capturedModes = [];
+    registerAgent('mock-yolo-plan-exec-agent', (params) => {
+      capturedModes.push(params.mode);
+      return {
+        command: 'node',
+        args: ['-e', 'process.exit(0);'],
+        env: process.env,
+        displayCmd: 'node yolo plan exec test',
+        interactive: false,
+      };
+    });
+
+    try {
+      const options = {
+        agent: 'mock-yolo-plan-exec-agent',
+        mode: 'plan-execute',
+        interactive: false,
+        yolo: true,
+        modelPlanning: 'claude-sonnet',
+        modelExecution: 'gemini-flash',
+        baseUrl: 'http://localhost:4000',
+        masterKey: 'sk-test',
+        delay: 0,
+      };
+
+      const result = await runTestCase('yolo-plan-exec-case', options, tmpParent);
+      assert.equal(result.success, true);
+      assert.equal(result.yolo, true);
+      assert.deepEqual(capturedModes, ['plan', 'bypassPermissions']);
+      assert.equal(result.runs[0].mode, 'plan');
+      assert.equal(result.runs[1].mode, 'bypassPermissions');
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(tmpParent, { recursive: true, force: true });
+    }
+  });
 });
 
 

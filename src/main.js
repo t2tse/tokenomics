@@ -20,8 +20,9 @@ export function printTestPlanTable(runsToExecute, options, testPlan) {
     const caseOpts = resolveCaseOptions(runItem, options, testPlan);
     const runNum = String(index + 1);
     const caseName = caseOpts.case || 'unknown';
-    const mode = caseOpts.mode || 'simple';
-    const modelStr = mode === 'plan-execute'
+    const baseMode = caseOpts.interactive ? 'interactive' : (caseOpts.mode || 'simple');
+    const mode = caseOpts.yolo && !caseOpts.interactive ? `${baseMode} (yolo)` : baseMode;
+    const modelStr = baseMode === 'plan-execute'
       ? `${caseOpts.modelPlanning} / ${caseOpts.modelExecution}`
       : (caseOpts.model || 'unknown');
 

@@ -141,6 +141,7 @@ npm run build
 | `--mode <type>` | Run mode override: `simple` or `plan-execute` | `simple` |
 | `--interactive` | Run coding agent in interactive mode instead of headless mode | `false` |
 | `--no-walkthrough` | Disable appending walkthrough prompt doc instructions in headless mode | *Off when passed* (default is on) |
+| `--yolo` | Override agent permission mode to `bypassPermissions` in headless execution | `false` would default to `auto` with classifier to block risky actions |
 | `--model <name>` | Model override for simple mode | `claude-sonnet` |
 | `--model-planning <name>`| Model override for planning phase in `plan-execute` mode | `claude-sonnet` |
 | `--model-execution <name>`| Model override for execution phase in `plan-execute` mode | `gemini-flash` |

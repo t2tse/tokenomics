@@ -501,6 +501,12 @@
       border: 1px solid rgba(148, 163, 184, 0.3);
     }
 
+    .badge-yolo {
+      background: rgba(239, 68, 68, 0.18);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+
     .status-success {
       background: rgba(16, 185, 129, 0.15);
       color: #34d399;
@@ -2821,11 +2827,14 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : [];
         if (selModel !== 'ALL' && selModel !== cfg.key && !models.includes(selModel)) return false;
 
+        const isYolo = Boolean(r.data && (r.data.yolo || (r.data.runs && r.data.runs.some(pr => pr.mode === 'bypassPermissions'))));
+
         if (searchVal) {
           const textMatch = r.id.toLowerCase().includes(searchVal) ||
                             r.caseName.toLowerCase().includes(searchVal) ||
                             cfg.key.toLowerCase().includes(searchVal) ||
-                            models.some(m => m.toLowerCase().includes(searchVal));
+                            models.some(m => m.toLowerCase().includes(searchVal)) ||
+                            (isYolo && 'yolo'.includes(searchVal));
           if (!textMatch) return false;
         }
 
@@ -2841,6 +2850,7 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         const metrics = r.data.metrics || {};
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : ['unknown'];
         const isSuccess = Boolean(r.data.success);
+        const isYolo = Boolean(r.data && (r.data.yolo || (r.data.runs && r.data.runs.some(pr => pr.mode === 'bypassPermissions'))));
         const modeInfo = getRunModeInfo(r);
 
         const totalReq = metrics.totalRequests || 0;
@@ -2921,7 +2931,10 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
           <td>
             <div style="font-family: var(--font-mono); font-weight: 600;">${r.timestamp}</div>
             <div style="font-size: 0.75rem; color: var(--text-muted);">${r.id}</div>
-            <div style="margin-top: 0.35rem;"><span class="badge ${modeInfo.badgeClass}">${modeInfo.displayText}</span></div>
+            <div style="margin-top: 0.35rem; display: flex; align-items: center; gap: 0.35rem; flex-wrap: wrap;">
+              <span class="badge ${modeInfo.badgeClass}">${modeInfo.displayText}</span>
+              ${isYolo ? '<span class="badge badge-yolo">Yolo</span>' : ''}
+            </div>
           </td>
           <td><strong>${r.caseName}</strong></td>
           <td>${modelCellHtml}</td>

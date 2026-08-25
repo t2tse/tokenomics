@@ -12,6 +12,7 @@ export const defaults = {
   mode: 'simple',
   interactive: false,
   walkthrough: true,
+  yolo: false,
   model: 'claude-sonnet',
   modelPlanning: 'claude-sonnet',
   modelExecution: 'gemini-flash',
@@ -44,6 +45,7 @@ Options:
   --mode <type>            Run mode override: 'simple' or 'plan-execute' (default: 'simple')
   --interactive            Run coding agent in interactive mode instead of headless mode (default: false)
   --no-walkthrough         Disable appending walkthrough prompt doc instructions in headless mode (default: walkthrough is on)
+  --yolo                   Override agent permission mode to 'bypassPermissions' in headless execution (default: false)
   --model <name>           Model override for simple mode (default: 'claude-sonnet')
   --model-planning <name>  Model override for planning phase in plan-execute mode (default: 'claude-sonnet')
   --model-execution <name> Model override for execution phase in plan-execute mode (default: 'gemini-flash')
@@ -101,6 +103,9 @@ export function parseArgs(args = process.argv.slice(2)) {
     } else if (arg === '--no-walkthrough') {
       options.walkthrough = false;
       explicitFlags.add('walkthrough');
+    } else if (arg === '--yolo') {
+      options.yolo = true;
+      explicitFlags.add('yolo');
     } else if (arg === '--model') {
       options.model = getValue(i, arg);
       i++;
@@ -176,6 +181,7 @@ export function resolveCaseOptions(caseInput, globalOptions, testPlan) {
     agent: globalOptions.agent,
     interactive: globalOptions.interactive,
     walkthrough: globalOptions.walkthrough,
+    yolo: globalOptions.yolo,
     baseUrl: globalOptions.baseUrl,
     masterKey: globalOptions.masterKey,
     delay: globalOptions.delay,
