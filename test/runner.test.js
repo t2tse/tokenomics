@@ -317,6 +317,81 @@ describe('runner & case discovery', () => {
       fs.rmSync(tmpParent, { recursive: true, force: true });
     }
   });
+
+  it('should extract cacheReadTokens and cacheWriteTokens from LiteLLM usage metrics', async () => {
+    const fs = await import('fs');
+    const os = await import('os');
+    const { runTestCase } = await import('../src/runner.js');
+    const { registerAgent } = await import('../src/agents/agent.js');
+
+    const originalFetch = globalThis.fetch;
+    globalThis.fetch = async (url) => {
+      if (url.includes('/user/new')) {
+        return { ok: true, json: async () => ({ user_id: 'test-cache-user', key: 'sk-12345678901234' }) };
+      }
+      if (url.includes('/user/info')) {
+        return { ok: true, json: async () => ({ user_info: { spend: 0.25 } }) };
+      }
+      if (url.includes('/user/daily/activity')) {
+        return {
+          ok: true,
+          json: async () => ({
+            metadata: {
+              total_spend: 0.25,
+              total_prompt_tokens: 15000,
+              total_completion_tokens: 500,
+              total_tokens: 15500,
+              total_cache_read_input_tokens: 8000,
+              total_cache_creation_input_tokens: 2000,
+              total_api_requests: 10,
+              total_successful_requests: 10,
+              total_failed_requests: 0,
+            }
+          })
+        };
+      }
+      return { ok: true, json: async () => ({ metadata: {} }) };
+    };
+
+    const tmpParent = fs.mkdtempSync(path.join(os.tmpdir(), 'tokenomics-test-cache-metrics-'));
+    const useCasesDir = path.join(tmpParent, 'use-cases');
+    const caseDir = path.join(useCasesDir, 'cache-case');
+    fs.mkdirSync(caseDir, { recursive: true });
+    fs.writeFileSync(path.join(caseDir, 'PROMPT.md'), 'Build cache test app.');
+
+    registerAgent('mock-cache-agent', () => {
+      return {
+        command: 'node',
+        args: ['-e', 'process.exit(0);'],
+        env: process.env,
+        displayCmd: 'node cache test',
+        interactive: false,
+      };
+    });
+
+    try {
+      const options = {
+        agent: 'mock-cache-agent',
+        mode: 'simple',
+        interactive: false,
+        model: 'claude-sonnet',
+        baseUrl: 'http://localhost:4000',
+        masterKey: 'sk-test',
+        delay: 0,
+      };
+
+      const result = await runTestCase('cache-case', options, tmpParent);
+      assert.equal(result.success, true);
+      assert.equal(result.metrics.cacheReadTokens, 8000);
+      assert.equal(result.metrics.cacheWriteTokens, 2000);
+      assert.equal(result.metrics.promptTokens, 15000);
+      assert.equal(result.metrics.completionTokens, 500);
+      assert.equal(result.metrics.totalTokens, 15500);
+    } finally {
+      globalThis.fetch = originalFetch;
+      fs.rmSync(tmpParent, { recursive: true, force: true });
+    }
+  });
 });
 
 

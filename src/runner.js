@@ -189,15 +189,44 @@ export async function runTestCase(caseName, options, parentDir) {
     const totalWallClockDurationMs = agentRuns.reduce((sum, run) => sum + run.durationMs, 0);
     const success = agentRuns.length > 0 && agentRuns.every((run) => run.success);
 
-    const metrics = usageData.metadata || {
-      total_spend: (userInfo.user_info && userInfo.user_info.spend) || 0,
-      total_prompt_tokens: 0,
-      total_completion_tokens: 0,
-      total_tokens: 0,
-      total_api_requests: 0,
-      total_successful_requests: 0,
-      total_failed_requests: 0,
-    };
+    const meta = usageData.metadata || {};
+
+    let cacheReadTokens = meta.total_cache_read_input_tokens 
+      ?? meta.cache_read_input_tokens 
+      ?? meta.total_cached_tokens 
+      ?? meta.cached_tokens;
+
+    let cacheWriteTokens = meta.total_cache_creation_input_tokens 
+      ?? meta.cache_creation_input_tokens 
+      ?? meta.total_cache_write_input_tokens 
+      ?? meta.cache_write_input_tokens;
+
+    // Fallback: aggregate from usageData.results if metadata did not contain them
+    if ((cacheReadTokens === undefined || cacheWriteTokens === undefined) && Array.isArray(usageData.results)) {
+      let sumRead = 0;
+      let sumWrite = 0;
+      let found = false;
+      for (const day of usageData.results) {
+        const m = day.metrics || day;
+        if (m) {
+          if (m.cache_read_input_tokens != null || m.cached_tokens != null) {
+            sumRead += (m.cache_read_input_tokens || m.cached_tokens || 0);
+            found = true;
+          }
+          if (m.cache_creation_input_tokens != null || m.cache_write_input_tokens != null) {
+            sumWrite += (m.cache_creation_input_tokens || m.cache_write_input_tokens || 0);
+            found = true;
+          }
+        }
+      }
+      if (found) {
+        if (cacheReadTokens === undefined) cacheReadTokens = sumRead;
+        if (cacheWriteTokens === undefined) cacheWriteTokens = sumWrite;
+      }
+    }
+
+    cacheReadTokens = cacheReadTokens || 0;
+    cacheWriteTokens = cacheWriteTokens || 0;
 
     const testCaseResult = {
       caseName,
@@ -206,13 +235,15 @@ export async function runTestCase(caseName, options, parentDir) {
       success,
       totalWallClockDurationSeconds: totalWallClockDurationMs / 1000,
       metrics: {
-        spendUSD: metrics.total_spend || (userInfo.user_info && userInfo.user_info.spend) || 0,
-        promptTokens: metrics.total_prompt_tokens || 0,
-        completionTokens: metrics.total_completion_tokens || 0,
-        totalTokens: metrics.total_tokens || 0,
-        totalRequests: metrics.total_api_requests || 0,
-        successfulRequests: metrics.total_successful_requests || 0,
-        failedRequests: metrics.total_failed_requests || 0,
+        spendUSD: meta.total_spend || (userInfo.user_info && userInfo.user_info.spend) || 0,
+        promptTokens: meta.total_prompt_tokens || 0,
+        completionTokens: meta.total_completion_tokens || 0,
+        totalTokens: meta.total_tokens || 0,
+        cacheReadTokens,
+        cacheWriteTokens,
+        totalRequests: meta.total_api_requests || 0,
+        successfulRequests: meta.total_successful_requests || 0,
+        failedRequests: meta.total_failed_requests || 0,
       },
       runs: agentRuns.map((run) => ({
         phase: run.phase,
@@ -226,7 +257,7 @@ export async function runTestCase(caseName, options, parentDir) {
     console.log(`🏁 [FINISHED] Test Case: "${caseName}" Result: ${success ? '✅ SUCCESS' : '❌ FAILED'}`);
     console.log(`   ⏱️ Wall-Clock Duration: ${testCaseResult.totalWallClockDurationSeconds.toFixed(2)}s`);
     console.log(`   💰 Spend: $${testCaseResult.metrics.spendUSD.toFixed(6)}`);
-    console.log(`   🪙 Tokens: ${testCaseResult.metrics.totalTokens} (Prompt: ${testCaseResult.metrics.promptTokens}, Completion: ${testCaseResult.metrics.completionTokens})`);
+    console.log(`   🪙 Tokens: ${testCaseResult.metrics.totalTokens} (Prompt: ${testCaseResult.metrics.promptTokens}, Completion: ${testCaseResult.metrics.completionTokens}, Cache Read: ${testCaseResult.metrics.cacheReadTokens}, Cache Write: ${testCaseResult.metrics.cacheWriteTokens})`);
     console.log(`   🌐 API Requests: ${testCaseResult.metrics.totalRequests} (Success: ${testCaseResult.metrics.successfulRequests}, Fail: ${testCaseResult.metrics.failedRequests})`);
 
     // Write individual test results inside the test case folder

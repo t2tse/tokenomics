@@ -883,11 +883,11 @@
       </div>
       <div class="kpi-card">
         <div class="kpi-title">
-          <span>Avg Token Efficiency</span>
-          <span class="tooltip-icon" data-tooltip-title="Tokens per USD Spent" data-tooltip-desc="Total Tokens / Total Spend USD. Higher is better (more tokens processed per dollar spent).">ℹ️</span>
+          <span>Avg Cache Hit Rate</span>
+          <span class="tooltip-icon" data-tooltip-title="Prompt Cache Hit Rate (%)" data-tooltip-desc="(Cache Read Tokens / Total Prompt Tokens) * 100. Percentage of prompt context retrieved from cache. Higher is better.">ℹ️</span>
         </div>
-        <div class="kpi-value" id="kpiAvgEfficiency">0</div>
-        <div class="kpi-sub">Tokens per USD spent</div>
+        <div class="kpi-value" id="kpiAvgCacheHitRate">0.0%</div>
+        <div class="kpi-sub" id="kpiCacheReadTokens">cr: 0 cached</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-title">
@@ -930,11 +930,32 @@
 
         <div class="glossary-item">
           <div class="glossary-item-title">
-            <span>Avg Tokens / $</span>
+            <span>Cache Tokens</span>
+            <span class="glossary-tag tag-input">Cache</span>
+          </div>
+          <div class="glossary-item-desc">
+            <strong>cr (Cache Read):</strong> Tokens retrieved from prompt cache (discounted rate).<br/>
+            <strong>cw (Cache Write):</strong> Tokens written to create new cache entries.
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Avg Tokens Volume</span>
+            <span class="glossary-tag tag-metric">Volume</span>
+          </div>
+          <div class="glossary-item-desc">
+            <code>Total Tokens (Prompt + Completion)</code>. Average total volume of tokens processed per run, with breakdown of prompt (<code>p</code>), completion (<code>c</code>), cache read (<code>cr</code>), and cache write (<code>cw</code>). Lower is better (least tokens used to complete the task).
+          </div>
+        </div>
+
+        <div class="glossary-item">
+          <div class="glossary-item-title">
+            <span>Avg Cache Hit Rate</span>
             <span class="glossary-tag tag-metric">Efficiency</span>
           </div>
           <div class="glossary-item-desc">
-            <code>Total Tokens / Total Spend ($)</code>. Measures cost-efficiency. Higher values mean more tokens processed per dollar spent (Higher is better). Includes Min-Median-Max range.
+            <code>(Cache Read Tokens / Total Prompt Tokens) * 100</code>. Measures prompt cache utilization efficiency (Higher is better). Higher cache hit rate reduces latency and API costs. Includes Min-Median-Max range.
           </div>
         </div>
 
@@ -945,16 +966,6 @@
           </div>
           <div class="glossary-item-desc">
             <code>(Completion Tokens / Total Tokens) * 100</code>. Shows whether a run is <strong>context-heavy</strong> (&lt;5% reading code) vs <strong>generation-heavy</strong> (&gt;15% writing code).
-          </div>
-        </div>
-
-        <div class="glossary-item">
-          <div class="glossary-item-title">
-            <span>Tokens / Sec</span>
-            <span class="glossary-tag tag-metric">Speed</span>
-          </div>
-          <div class="glossary-item-desc">
-            <code>Total Tokens / Duration (s)</code>. Overall throughput speed measuring how fast the model and proxy ingest context and generate output (Higher is better).
           </div>
         </div>
 
@@ -993,10 +1004,11 @@
           <div class="filter-group">
             <span class="filter-label" style="font-weight: 700; color: var(--accent-indigo);">🧩 Model View:</span>
             <select id="globalModelTypeFilter" onchange="onGlobalFilterChange()">
-              <option value="ALL">All Models & Sessions</option>
-              <option value="SINGLE">Headless Single Models</option>
+              <option value="ALL">All Sessions</option>
+              <option value="HEADLESS">Headless Sessions (All)</option>
+              <option value="SINGLE">Headless Single Models (Simple)</option>
               <option value="COMBO">Headless Model Combos (Plan-Exec)</option>
-              <option value="INTERACTIVE">Interactive Sessions</option>
+              <option value="INTERACTIVE">Interactive Sessions (All)</option>
             </select>
           </div>
           <div class="filter-group">
@@ -1010,9 +1022,10 @@
         <div style="display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;">
           <span style="font-size: 0.78rem; color: var(--text-muted); font-weight: 600;">Quick Chart Toggle:</span>
           <button class="btn btn-secondary btn-sm" onclick="setChartModelType('ALL')">Show All</button>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('HEADLESS')">Headless (All)</button>
           <button class="btn btn-secondary btn-sm" onclick="setChartModelType('SINGLE')">Single Models</button>
-          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('COMBO')">Combos Only</button>
-          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('INTERACTIVE')">Interactive Only</button>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('COMBO')">Model Combos</button>
+          <button class="btn btn-secondary btn-sm" onclick="setChartModelType('INTERACTIVE')">Interactive (All)</button>
         </div>
       </div>
     </div>
@@ -1043,13 +1056,13 @@
                 Avg Spend (USD) <span id="sort-icon-avgSpend"></span>
                 <span class="tooltip-icon" data-tooltip-title="Avg Spend (USD)" data-tooltip-desc="Average total dollar cost per run with Min-Median-Max range. Lower is better.">ℹ️</span>
               </th>
-              <th onclick="sortTableBy('avgEff')" style="cursor: pointer; user-select: none;" title="Click to sort by Avg Efficiency">
-                Avg Token Efficiency <span id="sort-icon-avgEff"></span>
-                <span class="tooltip-icon" data-tooltip-title="Avg Token Efficiency (Tokens/$)" data-tooltip-desc="Average total tokens processed per 1 USD spent with Min-Median-Max range. Higher is better.">ℹ️</span>
+              <th onclick="sortTableBy('avgTotalTokens')" style="cursor: pointer; user-select: none;" title="Click to sort by Avg Tokens Volume">
+                Avg Tokens Volume <span id="sort-icon-avgTotalTokens"></span>
+                <span class="tooltip-icon" data-tooltip-title="Avg Tokens Volume" data-tooltip-desc="Average total tokens per run with breakdown: p (Prompt), c (Completion), cr (Cache Read), and cw (Cache Write). Lower is better (least tokens used).">ℹ️</span>
               </th>
-              <th onclick="sortTableBy('avgTokSec')" style="cursor: pointer; user-select: none;" title="Click to sort by Speed">
-                Tokens / Sec <span id="sort-icon-avgTokSec"></span>
-                <span class="tooltip-icon" data-tooltip-title="Tokens / Sec (Speed)" data-tooltip-desc="Total Tokens / Wall Clock Duration (s). Measures overall processing throughput speed. Higher is better.">ℹ️</span>
+              <th onclick="sortTableBy('avgCacheHitRate')" style="cursor: pointer; user-select: none;" title="Click to sort by Avg Cache Hit Rate">
+                Avg Cache Hit Rate <span id="sort-icon-avgCacheHitRate"></span>
+                <span class="tooltip-icon" data-tooltip-title="Avg Cache Hit Rate (%)" data-tooltip-desc="(Cache Read Tokens / Total Prompt Tokens) * 100. Percentage of prompt context retrieved from cache with Min-Median-Max range. Higher is better.">ℹ️</span>
               </th>
               <th onclick="sortTableBy('avgCompRatio')" style="cursor: pointer; user-select: none;" title="Click to sort by Completion Ratio">
                 Avg Completion Ratio <span id="sort-icon-avgCompRatio"></span>
@@ -1098,7 +1111,7 @@
     <div id="chartTabSelectorBar" style="display: none; margin-bottom: 1rem; gap: 0.5rem; flex-wrap: wrap;">
       <button class="btn btn-primary btn-sm active" id="btnTabSpend" onclick="setActiveChartTab('spend')">💰 Spend ($)</button>
       <button class="btn btn-secondary btn-sm" id="btnTabDur" onclick="setActiveChartTab('dur')">⏱️ Avg Duration</button>
-      <button class="btn btn-secondary btn-sm" id="btnTabEff" onclick="setActiveChartTab('eff')">🚀 Token Efficiency</button>
+      <button class="btn btn-secondary btn-sm" id="btnTabEff" onclick="setActiveChartTab('eff')">🚀 Token Volume & Cache</button>
       <button class="btn btn-secondary btn-sm" id="btnTabReq" onclick="setActiveChartTab('req')">📡 API Requests</button>
     </div>
 
@@ -1128,10 +1141,15 @@
         </div>
       </div>
       <div class="card" id="cardEff">
-        <div class="section-title"><span>🚀</span> Token Efficiency (Tokens / USD) per Model by Use Case</div>
+        <div class="section-title"><span>🚀</span> Average Token Volume & Cache Breakdown per Model by Use Case</div>
         <div style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.75rem; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-          <span>Chart updates dynamically based on Focus Use Case & Model View filters above.</span>
-          <span style="color: var(--accent-cyan); font-weight: 600;">💡 Click any model legend item below to show/hide</span>
+          <div>
+            <span>Model Color Shades: </span>
+            <span style="color: #ffffff; font-weight: 600;">■ Cached Read (Lighter)</span> &nbsp;·&nbsp;
+            <span style="color: #afb6b9; font-weight: 600;">■ Non-Cached Read (Base)</span> &nbsp;·&nbsp;
+            <span style="color: #94a3b8; -webkit-text-stroke: 0.5px #64748b; font-weight: 600;">■ Completion (Darker)</span>
+          </div>
+          <span style="color: #ffffff; font-weight: 500;">💡 Click any model in legend to show/hide</span>
         </div>
         <div class="chart-scroll-wrapper">
           <div class="chart-inner-container" id="effChartWrapper">
@@ -1185,7 +1203,10 @@
               <th>Use Case</th>
               <th>Model(s)</th>
               <th>Spend ($)</th>
-              <th>Total Tokens</th>
+              <th>
+                Total Tokens
+                <span class="tooltip-icon" data-tooltip-title="Total Tokens Breakdown" data-tooltip-desc="Total tokens with breakdown: p (Prompt), c (Completion), cr (Cache Read), and cw (Cache Write).">ℹ️</span>
+              </th>
               <th>API Requests</th>
               <th>Duration (s)</th>
               <th>Status</th>
@@ -1224,6 +1245,8 @@
     let efficiencyChartInstance = null;
     let durationChartInstance = null;
     let requestsChartInstance = null;
+    const chartEffHiddenSegments = new Set();
+    const chartEffHiddenModels = new Set();
     let currentChartLayout = 'grid'; // 'grid', 'full', 'tabs'
     let currentActiveTab = 'spend';  // 'spend', 'eff', 'dur', 'req'
     let summarySortColumn = 'caseName';
@@ -1234,7 +1257,7 @@
         summarySortDirection = summarySortDirection === 'asc' ? 'desc' : 'asc';
       } else {
         summarySortColumn = columnKey;
-        summarySortDirection = ['avgEff', 'avgTokSec', 'avgTotalRequests', 'successPct'].includes(columnKey) ? 'desc' : 'asc';
+        summarySortDirection = ['avgCacheHitRate', 'avgTotalRequests', 'successPct'].includes(columnKey) ? 'desc' : 'asc';
       }
       renderHighLevelSummary();
     }
@@ -1540,6 +1563,55 @@
       return `<span class="badge" style="background: ${cfg.badgeBg}; color: ${cfg.badgeText}; border: 1px solid ${cfg.badgeBorder}; ${extraStyle}">${modelName}</span>`;
     }
 
+    function parseRgb(colorStr) {
+      if (!colorStr) return { r: 99, g: 102, b: 241 };
+      if (colorStr.startsWith('#')) {
+        let hex = colorStr.slice(1);
+        if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+        const num = parseInt(hex, 16);
+        return { r: (num >> 16) & 255, g: (num >> 8) & 255, b: num & 255 };
+      }
+      const match = colorStr.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)/);
+      if (match) {
+        return { r: parseInt(match[1]), g: parseInt(match[2]), b: parseInt(match[3]) };
+      }
+      return { r: 99, g: 102, b: 241 };
+    }
+
+    function getModelShades(modelName) {
+      const cfg = getModelColorConfig(modelName);
+      const rgb = parseRgb(cfg.chartBorder || cfg.chartBg);
+      
+      // Lighter for Cached Read (cr): mix with white
+      const lr = Math.round(rgb.r + (255 - rgb.r) * 0.52);
+      const lg = Math.round(rgb.g + (255 - rgb.g) * 0.52);
+      const lb = Math.round(rgb.b + (255 - rgb.b) * 0.52);
+      const lightBg = `rgba(${lr}, ${lg}, ${lb}, 0.85)`;
+      const lightBorder = `rgb(${lr}, ${lg}, ${lb})`;
+
+      // Base for Non-Cached Read (p - cr)
+      const baseBg = cfg.chartBg;
+      const baseBorder = cfg.chartBorder;
+
+      // Darker for Completion (c): darken
+      const dr = Math.round(rgb.r * 0.55);
+      const dg = Math.round(rgb.g * 0.55);
+      const db = Math.round(rgb.b * 0.55);
+      const darkBg = `rgba(${dr}, ${dg}, ${db}, 0.92)`;
+      const darkBorder = `rgb(${dr}, ${dg}, ${db})`;
+
+      return {
+        cfg,
+        isInteractive: cfg.isInteractive,
+        lightBg,
+        lightBorder,
+        baseBg,
+        baseBorder,
+        darkBg,
+        darkBorder
+      };
+    }
+
     function getRunModeInfo(r) {
       const data = r.data || {};
       let isInteractive = Boolean(data.interactive);
@@ -1767,12 +1839,13 @@
       let totalTokens = 0;
       let promptTokens = 0;
       let completionTokens = 0;
+      let cacheReadTokens = 0;
+      let cacheWriteTokens = 0;
       let totalRequests = 0;
       let totalSuccessfulRequests = 0;
       let totalFailedRequests = 0;
       let totalRunsCount = globalManifestData.runs.length;
       let successRunsCount = 0;
-      let effList = [];
 
       globalManifestData.runs.forEach(r => {
         const isSuccess = Boolean(r.data.success);
@@ -1787,15 +1860,16 @@
         totalTokens += tokens;
         promptTokens += metrics.promptTokens || 0;
         completionTokens += metrics.completionTokens || 0;
+        cacheReadTokens += metrics.cacheReadTokens || 0;
+        cacheWriteTokens += metrics.cacheWriteTokens || 0;
         totalRequests += metrics.totalRequests || 0;
         totalSuccessfulRequests += metrics.successfulRequests || 0;
         totalFailedRequests += metrics.failedRequests || 0;
-        if (spend > 0) effList.push(tokens / spend);
       });
 
       const effectiveRunsCount = excludeFailures ? successRunsCount : totalRunsCount;
       const avgSpend = effectiveRunsCount > 0 ? (totalSpend / effectiveRunsCount) : 0;
-      const avgEfficiency = effList.length > 0 ? Math.round(effList.reduce((a, b) => a + b, 0) / effList.length) : 0;
+      const avgCacheHitRate = promptTokens > 0 ? ((cacheReadTokens / promptTokens) * 100) : 0;
       const successRatePct = totalRunsCount > 0 ? Math.round((successRunsCount / totalRunsCount) * 100) : 0;
 
       document.getElementById('kpiTotalSpend').innerText = formatUSD(totalSpend);
@@ -1804,7 +1878,10 @@
       document.getElementById('kpiTotalTokens').innerText = formatInt(totalTokens);
       document.getElementById('kpiPromptCompletion').innerText = `${formatInt(promptTokens)} prompt / ${formatInt(completionTokens)} comp`;
 
-      document.getElementById('kpiAvgEfficiency').innerText = `${formatInt(avgEfficiency)} tok/$`;
+      const kpiHitRateEl = document.getElementById('kpiAvgCacheHitRate');
+      if (kpiHitRateEl) kpiHitRateEl.innerText = `${avgCacheHitRate.toFixed(1)}%`;
+      const kpiCacheReadEl = document.getElementById('kpiCacheReadTokens');
+      if (kpiCacheReadEl) kpiCacheReadEl.innerText = `cr: ${formatInt(cacheReadTokens)} cached (${formatInt(promptTokens)} prompt)`;
 
       document.getElementById('kpiTotalRuns').innerText = totalRunsCount;
       document.getElementById('kpiSuccessRate').innerText = `${successRatePct}% Success Rate (${successRunsCount}/${totalRunsCount}) · ${formatInt(totalRequests)} reqs (${formatInt(totalSuccessfulRequests)} succ / ${formatInt(totalFailedRequests)} fail)`;
@@ -1839,8 +1916,9 @@
         const isSuccess = Boolean(r.data.success);
         const cfg = getRunModelConfig(r);
 
-        if (selModelType === 'SINGLE' && cfg.isMultiModel) return;
-        if (selModelType === 'COMBO' && !cfg.isMultiModel) return;
+        if (selModelType === 'HEADLESS' && cfg.isInteractive) return;
+        if (selModelType === 'SINGLE' && (cfg.isMultiModel || cfg.isInteractive)) return;
+        if (selModelType === 'COMBO' && (!cfg.isMultiModel || cfg.isInteractive)) return;
         if (selModelType === 'INTERACTIVE' && !cfg.isInteractive) return;
 
         const groupKey = `${cName}||${cfg.key}`;
@@ -1853,12 +1931,15 @@
             totalExecutedRuns: 0,
             successCount: 0,
             spends: [],
-            tokensList: [],
+            totalTokensList: [],
+            promptTokensList: [],
+            completionTokensList: [],
+            cacheReadTokensList: [],
+            cacheWriteTokensList: [],
+            cacheHitRates: [],
             durations: [],
             planDurations: [],
             execDurations: [],
-            efficiencies: [], // tokens / spend
-            tokensPerSec: [],
             completionRatios: [], // completionTokens / totalTokens
             requestsList: [],
             successfulRequestsList: [],
@@ -1873,8 +1954,18 @@
         // Filter out calculation of failed cases when excludeFailures toggle is checked
         if (excludeFailures && !isSuccess) return;
 
+        const promptTokens = metrics.promptTokens || 0;
+        const cacheReadTokens = metrics.cacheReadTokens || 0;
+        const cacheWriteTokens = metrics.cacheWriteTokens || 0;
+        const cacheHitRate = promptTokens > 0 ? ((cacheReadTokens / promptTokens) * 100) : 0;
+
         grp.spends.push(spend);
-        grp.tokensList.push(tokens);
+        grp.totalTokensList.push(tokens);
+        grp.promptTokensList.push(promptTokens);
+        grp.completionTokensList.push(completionTokens);
+        grp.cacheReadTokensList.push(cacheReadTokens);
+        grp.cacheWriteTokensList.push(cacheWriteTokens);
+        grp.cacheHitRates.push(cacheHitRate);
         grp.durations.push(duration);
         grp.requestsList.push(metrics.totalRequests || 0);
         grp.successfulRequestsList.push(metrics.successfulRequests || 0);
@@ -1890,8 +1981,6 @@
           grp.execDurations.push(executionRun ? (executionRun.wallClockDurationSeconds || 0) : 0);
         }
 
-        if (spend > 0) grp.efficiencies.push(tokens / spend);
-        if (duration > 0) grp.tokensPerSec.push(tokens / duration);
         if (tokens > 0) grp.completionRatios.push((completionTokens / tokens) * 100);
       });
 
@@ -1906,8 +1995,9 @@
             ...grp,
             runsCount: 0,
             avgSpend: 0, minSpend: 0, medianSpend: 0, maxSpend: 0,
-            avgEff: 0, minEff: 0, medianEff: 0, maxEff: 0,
-            avgTokSec: 0, avgCompRatio: 0,
+            avgTotalTokens: 0, avgPromptTokens: 0, avgCompletionTokens: 0, avgCacheReadTokens: 0, avgCacheWriteTokens: 0,
+            avgCacheHitRate: 0, minCacheHitRate: 0, medianCacheHitRate: 0, maxCacheHitRate: 0,
+            avgCompRatio: 0,
             avgTotalRequests: 0, avgSuccessfulRequests: 0, avgFailedRequests: 0,
             avgDuration: 0, minDuration: 0, medianDuration: 0, maxDuration: 0,
             hasPlanExec: false, avgPlanDuration: null, avgExecDuration: null,
@@ -1921,12 +2011,17 @@
         const medianSpend = calculateMedian(grp.spends);
         const maxSpend = Math.max(...grp.spends);
 
-        const avgEff = grp.efficiencies.length > 0 ? (grp.efficiencies.reduce((a, b) => a + b, 0) / grp.efficiencies.length) : 0;
-        const minEff = grp.efficiencies.length > 0 ? Math.min(...grp.efficiencies) : 0;
-        const medianEff = calculateMedian(grp.efficiencies);
-        const maxEff = grp.efficiencies.length > 0 ? Math.max(...grp.efficiencies) : 0;
+        const avgTotalTokens = grp.totalTokensList.length > 0 ? (grp.totalTokensList.reduce((a, b) => a + b, 0) / grp.totalTokensList.length) : 0;
+        const avgPromptTokens = grp.promptTokensList.length > 0 ? (grp.promptTokensList.reduce((a, b) => a + b, 0) / grp.promptTokensList.length) : 0;
+        const avgCompletionTokens = grp.completionTokensList.length > 0 ? (grp.completionTokensList.reduce((a, b) => a + b, 0) / grp.completionTokensList.length) : 0;
+        const avgCacheReadTokens = grp.cacheReadTokensList.length > 0 ? (grp.cacheReadTokensList.reduce((a, b) => a + b, 0) / grp.cacheReadTokensList.length) : 0;
+        const avgCacheWriteTokens = grp.cacheWriteTokensList.length > 0 ? (grp.cacheWriteTokensList.reduce((a, b) => a + b, 0) / grp.cacheWriteTokensList.length) : 0;
 
-        const avgTokSec = grp.tokensPerSec.length > 0 ? (grp.tokensPerSec.reduce((a, b) => a + b, 0) / grp.tokensPerSec.length) : 0;
+        const avgCacheHitRate = grp.cacheHitRates.length > 0 ? (grp.cacheHitRates.reduce((a, b) => a + b, 0) / grp.cacheHitRates.length) : 0;
+        const minCacheHitRate = grp.cacheHitRates.length > 0 ? Math.min(...grp.cacheHitRates) : 0;
+        const medianCacheHitRate = calculateMedian(grp.cacheHitRates);
+        const maxCacheHitRate = grp.cacheHitRates.length > 0 ? Math.max(...grp.cacheHitRates) : 0;
+
         const avgCompRatio = grp.completionRatios.length > 0 ? (grp.completionRatios.reduce((a, b) => a + b, 0) / grp.completionRatios.length) : 0;
 
         const avgTotalRequests = grp.requestsList.length > 0 ? (grp.requestsList.reduce((a, b) => a + b, 0) / grp.requestsList.length) : 0;
@@ -1946,8 +2041,9 @@
           ...grp,
           runsCount,
           avgSpend, minSpend, medianSpend, maxSpend,
-          avgEff, minEff, medianEff, maxEff,
-          avgTokSec, avgCompRatio,
+          avgTotalTokens, avgPromptTokens, avgCompletionTokens, avgCacheReadTokens, avgCacheWriteTokens,
+          avgCacheHitRate, minCacheHitRate, medianCacheHitRate, maxCacheHitRate,
+          avgCompRatio,
           avgTotalRequests, avgSuccessfulRequests, avgFailedRequests,
           avgDuration, minDuration, medianDuration, maxDuration,
           hasPlanExec, avgPlanDuration, avgExecDuration,
@@ -1971,18 +2067,18 @@
         }
 
         const spends = items.map(i => i.avgSpend);
-        const effs = items.map(i => i.avgEff);
-        const tokSecs = items.map(i => i.avgTokSec);
+        const totalTokens = items.map(i => i.avgTotalTokens);
+        const cacheHitRates = items.map(i => i.avgCacheHitRate);
         const durations = items.map(i => i.avgDuration);
         const successes = items.map(i => i.successPct);
 
         caseExtremes.set(cName, {
           minSpend: Math.min(...spends),
           maxSpend: Math.max(...spends),
-          minEff: Math.min(...effs),
-          maxEff: Math.max(...effs),
-          minTokSec: Math.min(...tokSecs),
-          maxTokSec: Math.max(...tokSecs),
+          minTotalTokens: Math.min(...totalTokens),
+          maxTotalTokens: Math.max(...totalTokens),
+          minCacheHitRate: Math.min(...cacheHitRates),
+          maxCacheHitRate: Math.max(...cacheHitRates),
           minDuration: Math.min(...durations),
           maxDuration: Math.max(...durations),
           minSuccess: Math.min(...successes),
@@ -1991,7 +2087,7 @@
       });
 
       // Update header sort direction icons
-      const sortCols = ['caseName', 'modelKey', 'totalExecutedRuns', 'avgSpend', 'avgEff', 'avgTokSec', 'avgCompRatio', 'avgTotalRequests', 'avgDuration', 'successPct'];
+      const sortCols = ['caseName', 'modelKey', 'totalExecutedRuns', 'avgSpend', 'avgTotalTokens', 'avgCacheHitRate', 'avgCompRatio', 'avgTotalRequests', 'avgDuration', 'successPct'];
       sortCols.forEach(col => {
         const iconEl = document.getElementById(`sort-icon-${col}`);
         if (iconEl) {
@@ -2036,27 +2132,27 @@
           }
         }
 
-        // Efficiency: Higher is Best
-        let effClass = '', effTag = '';
-        if (extremes && extremes.minEff !== extremes.maxEff) {
-          if (item.avgEff === extremes.maxEff) {
-            effClass = 'metric-best';
-            effTag = '<span class="metric-tag-best">BEST</span>';
-          } else if (item.avgEff === extremes.minEff) {
-            effClass = 'metric-worst';
-            effTag = '<span class="metric-tag-worst">WORST</span>';
+        // Total Tokens: Lower is Best (least tokens is better)
+        let tokenClass = '', tokenTag = '';
+        if (extremes && extremes.minTotalTokens !== extremes.maxTotalTokens) {
+          if (item.avgTotalTokens === extremes.minTotalTokens) {
+            tokenClass = 'metric-best';
+            tokenTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.avgTotalTokens === extremes.maxTotalTokens) {
+            tokenClass = 'metric-worst';
+            tokenTag = '<span class="metric-tag-worst">WORST</span>';
           }
         }
 
-        // Speed (Tokens/sec): Higher is Best
-        let tokSecClass = '', tokSecTag = '';
-        if (extremes && extremes.minTokSec !== extremes.maxTokSec) {
-          if (item.avgTokSec === extremes.maxTokSec) {
-            tokSecClass = 'metric-best';
-            tokSecTag = '<span class="metric-tag-best">BEST</span>';
-          } else if (item.avgTokSec === extremes.minTokSec) {
-            tokSecClass = 'metric-worst';
-            tokSecTag = '<span class="metric-tag-worst">WORST</span>';
+        // Cache Hit Rate: Higher is Best
+        let cacheHitClass = '', cacheHitTag = '';
+        if (extremes && extremes.minCacheHitRate !== extremes.maxCacheHitRate) {
+          if (item.avgCacheHitRate === extremes.maxCacheHitRate) {
+            cacheHitClass = 'metric-best';
+            cacheHitTag = '<span class="metric-tag-best">BEST</span>';
+          } else if (item.avgCacheHitRate === extremes.minCacheHitRate) {
+            cacheHitClass = 'metric-worst';
+            cacheHitTag = '<span class="metric-tag-worst">WORST</span>';
           }
         }
 
@@ -2084,6 +2180,13 @@
           }
         }
 
+        const avgCrSpan = item.avgCacheReadTokens > 0
+          ? `<span style="color: #34d399;">cr: ${formatInt(Math.round(item.avgCacheReadTokens))}</span>`
+          : `cr: ${formatInt(Math.round(item.avgCacheReadTokens))}`;
+        const avgCwSpan = item.avgCacheWriteTokens > 0
+          ? `<span style="color: #34d399;">cw: ${formatInt(Math.round(item.avgCacheWriteTokens))}</span>`
+          : `cw: ${formatInt(Math.round(item.avgCacheWriteTokens))}`;
+
         const tr = document.createElement('tr');
         tr.innerHTML = `
           <td><strong>${item.caseName}</strong></td>
@@ -2096,17 +2199,23 @@ Med: ${formatUSD(item.medianSpend)}
 Max: ${formatUSD(item.maxSpend)}</div>
           </td>
           <td>
-            <div class="metric-value ${effClass}">${formatInt(Math.round(item.avgEff))} tok/$ ${effTag}</div>
-            <div class="range-box">Min: ${formatInt(Math.round(item.minEff))} tok/$
-Med: ${formatInt(Math.round(item.medianEff))} tok/$
-Max: ${formatInt(Math.round(item.maxEff))} tok/$</div>
+            <div class="metric-value ${tokenClass}">${formatInt(Math.round(item.avgTotalTokens))} ${tokenTag}</div>
+            <div class="range-box">p: ${formatInt(Math.round(item.avgPromptTokens))}
+c: ${formatInt(Math.round(item.avgCompletionTokens))}
+${avgCrSpan}
+${avgCwSpan}</div>
           </td>
-          <td><span class="metric-value ${tokSecClass}">${Math.round(item.avgTokSec)} tok/s ${tokSecTag}</span></td>
+          <td>
+            <div class="metric-value ${cacheHitClass}">${item.avgCacheHitRate.toFixed(1)}% ${cacheHitTag}</div>
+            <div class="range-box">Min: ${item.minCacheHitRate.toFixed(1)}%
+Med: ${item.medianCacheHitRate.toFixed(1)}%
+Max: ${item.maxCacheHitRate.toFixed(1)}%</div>
+          </td>
           <td><span class="metric-value">${item.avgCompRatio.toFixed(1)}%</span></td>
           <td>
             <div class="metric-value">${item.avgTotalRequests % 1 === 0 ? item.avgTotalRequests : item.avgTotalRequests.toFixed(1)} reqs</div>
             <div class="range-box">Succ: ${item.avgSuccessfulRequests % 1 === 0 ? item.avgSuccessfulRequests : item.avgSuccessfulRequests.toFixed(1)}
-Fail: ${item.avgFailedRequests % 1 === 0 ? item.avgFailedRequests : item.avgFailedRequests.toFixed(1)}</div>
+${item.avgFailedRequests > 0 ? `<span style="color: #f87171;">Fail: ${item.avgFailedRequests % 1 === 0 ? item.avgFailedRequests : item.avgFailedRequests.toFixed(1)}</span>` : `Fail: ${item.avgFailedRequests % 1 === 0 ? item.avgFailedRequests : item.avgFailedRequests.toFixed(1)}`}</div>
           </td>
           <td>
             <div class="metric-value ${durClass}">
@@ -2150,8 +2259,9 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         if (excludeFailures && !isSuccess) return;
 
         const cfg = getRunModelConfig(r);
-        if (selModelType === 'SINGLE' && cfg.isMultiModel) return;
-        if (selModelType === 'COMBO' && !cfg.isMultiModel) return;
+        if (selModelType === 'HEADLESS' && cfg.isInteractive) return;
+        if (selModelType === 'SINGLE' && (cfg.isMultiModel || cfg.isInteractive)) return;
+        if (selModelType === 'COMBO' && (!cfg.isMultiModel || cfg.isInteractive)) return;
         if (selModelType === 'INTERACTIVE' && !cfg.isInteractive) return;
 
         useCasesSet.add(cName);
@@ -2165,16 +2275,34 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         modelsSet.add(m);
         const key = `${cName}||${m}`;
         if (!caseModelData.has(key)) {
-          caseModelData.set(key, { spends: [], tokens: [], durations: [], efficiencies: [], requests: [], successfulRequests: [], failedRequests: [] });
+          caseModelData.set(key, {
+            spends: [],
+            tokens: [],
+            promptTokens: [],
+            completionTokens: [],
+            cacheReadTokens: [],
+            cacheWriteTokens: [],
+            cacheHitRates: [],
+            durations: [],
+            requests: [],
+            successfulRequests: [],
+            failedRequests: []
+          });
         }
         const item = caseModelData.get(key);
         item.spends.push(spend);
         item.tokens.push(tokens);
+        item.promptTokens.push(metrics.promptTokens || 0);
+        item.completionTokens.push(metrics.completionTokens || 0);
+        item.cacheReadTokens.push(metrics.cacheReadTokens || 0);
+        item.cacheWriteTokens.push(metrics.cacheWriteTokens || 0);
+        const pTok = metrics.promptTokens || 0;
+        const crTok = metrics.cacheReadTokens || 0;
+        item.cacheHitRates.push(pTok > 0 ? (crTok / pTok) * 100 : 0);
         item.durations.push(duration);
         item.requests.push(metrics.totalRequests || 0);
         item.successfulRequests.push(metrics.successfulRequests || 0);
         item.failedRequests.push(metrics.failedRequests || 0);
-        if (spend > 0) item.efficiencies.push(tokens / spend);
       });
 
       const useCases = Array.from(useCasesSet).sort();
@@ -2198,7 +2326,7 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         }
       });
 
-      // Build datasets for Spend, Efficiency, Duration, and API Requests
+      // Build datasets for Spend, Token Volume & Cache, Duration, and API Requests
       const spendDatasets = [];
       const effDatasets = [];
       const durationDatasets = [];
@@ -2211,6 +2339,7 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
 
       models.forEach((m, idx) => {
         const color = getModelColorConfig(m);
+        const shades = getModelShades(m);
 
         const spendValues = useCases.map(uc => {
           const key = `${uc}||${m}`;
@@ -2219,12 +2348,43 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
           return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
         });
 
-        const effValues = useCases.map(uc => {
+        const tokenValues = useCases.map(uc => {
           const key = `${uc}||${m}`;
           if (!caseModelData.has(key)) return 0;
-          const data = caseModelData.get(key);
-          const effs = data.efficiencies || [];
-          return effs.length > 0 ? Math.round(effs.reduce((a, b) => a + b, 0) / effs.length) : 0;
+          const arr = caseModelData.get(key).tokens;
+          return arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
+        const crValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).cacheReadTokens;
+          return arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
+        const nonCachedValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const pArr = caseModelData.get(key).promptTokens || [];
+          const crArr = caseModelData.get(key).cacheReadTokens || [];
+          if (pArr.length === 0) return 0;
+          const avgP = pArr.reduce((a, b) => a + b, 0) / pArr.length;
+          const avgCr = crArr.reduce((a, b) => a + b, 0) / crArr.length;
+          return Math.max(0, Math.round(avgP - avgCr));
+        });
+
+        const cValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).completionTokens;
+          return arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
+        });
+
+        const hitRateValues = useCases.map(uc => {
+          const key = `${uc}||${m}`;
+          if (!caseModelData.has(key)) return 0;
+          const arr = caseModelData.get(key).cacheHitRates;
+          return arr.length > 0 ? (arr.reduce((a, b) => a + b, 0) / arr.length) : 0;
         });
 
         const durationValues = useCases.map(uc => {
@@ -2256,7 +2416,6 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         });
 
         const spendBg = color.isInteractive ? createStripedPattern(ctxSpend, color.chartBg) : color.chartBg;
-        const effBg = color.isInteractive ? createStripedPattern(ctxEff, color.chartBg) : color.chartBg;
         const durationBg = color.isInteractive ? createStripedPattern(ctxDuration, color.chartBg) : color.chartBg;
         const reqBg = color.isInteractive ? createStripedPattern(ctxRequests, color.chartBg) : color.chartBg;
 
@@ -2272,13 +2431,71 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
           barPercentage: 0.85
         });
 
+        // 3-Segment Stacked Datasets for Chart 3 per Model (cr, p-cr, c)
+        // Segment 1: Cached Read (cr) - Lighter model shade (Bottom of stack)
         effDatasets.push({
-          label: m,
-          data: effValues,
-          backgroundColor: effBg,
-          borderColor: color.chartBorder,
-          borderWidth: color.isInteractive ? 2 : 1,
-          borderRadius: 6,
+          label: `${m} (cr)`,
+          modelName: m,
+          modelColor: color.chartBg,
+          segmentType: 'cr',
+          segmentName: 'Cached Read (cr)',
+          stack: m,
+          data: crValues,
+          totalTokensData: tokenValues,
+          hitRateData: hitRateValues,
+          crData: crValues,
+          nonCachedData: nonCachedValues,
+          cData: cValues,
+          backgroundColor: shades.isInteractive ? createStripedPattern(ctxEff, shades.lightBg) : shades.lightBg,
+          borderColor: shades.lightBorder,
+          borderWidth: shades.isInteractive ? 2 : 1,
+          borderRadius: 0,
+          maxBarThickness: 64,
+          categoryPercentage: 0.8,
+          barPercentage: 0.85
+        });
+
+        // Segment 2: Non-Cached Read (p - cr) - Base model color (Middle of stack)
+        effDatasets.push({
+          label: `${m} (p - cr)`,
+          modelName: m,
+          modelColor: color.chartBg,
+          segmentType: 'p-cr',
+          segmentName: 'Non-Cached Read (p - cr)',
+          stack: m,
+          data: nonCachedValues,
+          totalTokensData: tokenValues,
+          hitRateData: hitRateValues,
+          crData: crValues,
+          nonCachedData: nonCachedValues,
+          cData: cValues,
+          backgroundColor: shades.isInteractive ? createStripedPattern(ctxEff, shades.baseBg) : shades.baseBg,
+          borderColor: shades.baseBorder,
+          borderWidth: shades.isInteractive ? 2 : 1,
+          borderRadius: 0,
+          maxBarThickness: 64,
+          categoryPercentage: 0.8,
+          barPercentage: 0.85
+        });
+
+        // Segment 3: Completion (c) - Darker model shade (Top of stack)
+        effDatasets.push({
+          label: `${m} (c)`,
+          modelName: m,
+          modelColor: color.chartBg,
+          segmentType: 'c',
+          segmentName: 'Completion (c)',
+          stack: m,
+          data: cValues,
+          totalTokensData: tokenValues,
+          hitRateData: hitRateValues,
+          crData: crValues,
+          nonCachedData: nonCachedValues,
+          cData: cValues,
+          backgroundColor: shades.isInteractive ? createStripedPattern(ctxEff, shades.darkBg) : shades.darkBg,
+          borderColor: shades.darkBorder,
+          borderWidth: shades.isInteractive ? 2 : 1,
+          borderRadius: { topLeft: 5, topRight: 5, bottomLeft: 0, bottomRight: 0 },
           maxBarThickness: 64,
           categoryPercentage: 0.8,
           barPercentage: 0.85
@@ -2327,7 +2544,7 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
             legend: {
               display: true,
               position: 'top',
-              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+              labels: { color: '#ffffff', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
             },
             tooltip: {
               callbacks: {
@@ -2358,7 +2575,7 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
             legend: {
               display: true,
               position: 'top',
-              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+              labels: { color: '#ffffff', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
             },
             tooltip: {
               callbacks: {
@@ -2373,7 +2590,7 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         }
       });
 
-      // Efficiency Chart
+      // Efficiency / Token Volume & Cache Chart (Grouped Stacked Bar Chart)
       if (efficiencyChartInstance) efficiencyChartInstance.destroy();
 
       efficiencyChartInstance = new Chart(ctxEff, {
@@ -2389,20 +2606,157 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
             legend: {
               display: true,
               position: 'top',
-              labels: { color: '#f8fafc', font: { family: 'Inter', size: 12 }, boxWidth: 12 }
+              labels: {
+                color: '#ffffff',
+                font: { family: 'Inter', size: 12 },
+                boxWidth: 12,
+                generateLabels: chart => {
+                  const labels = [];
+
+                  // 1. Token breakdown segments (generic swatches)
+                  labels.push({
+                    text: 'Cached Read (cr)',
+                    fontColor: '#ffffff',
+                    fillStyle: '#ffffff',
+                    strokeStyle: '#cbd5e1',
+                    lineWidth: 1,
+                    hidden: chartEffHiddenSegments.has('cr'),
+                    itemType: 'segment',
+                    segmentKey: 'cr'
+                  });
+                  labels.push({
+                    text: 'Non-Cached Read (p - cr)',
+                    fontColor: '#ffffff',
+                    fillStyle: '#94a3b8',
+                    strokeStyle: '#64748b',
+                    lineWidth: 1,
+                    hidden: chartEffHiddenSegments.has('p-cr'),
+                    itemType: 'segment',
+                    segmentKey: 'p-cr'
+                  });
+                  labels.push({
+                    text: 'Completion (c)',
+                    fontColor: '#ffffff',
+                    fillStyle: '#1e293b',
+                    strokeStyle: '#64748b',
+                    lineWidth: 1,
+                    hidden: chartEffHiddenSegments.has('c'),
+                    itemType: 'segment',
+                    segmentKey: 'c'
+                  });
+
+                  // 2. Models
+                  const datasets = chart.data.datasets;
+                  const modelsSeen = new Set();
+                  datasets.forEach((ds, i) => {
+                    if (ds.modelName && !modelsSeen.has(ds.modelName)) {
+                      modelsSeen.add(ds.modelName);
+                      labels.push({
+                        text: ds.modelName,
+                        fontColor: '#ffffff',
+                        fillStyle: ds.modelColor || ds.borderColor,
+                        strokeStyle: ds.borderColor,
+                        lineWidth: 1,
+                        hidden: chartEffHiddenModels.has(ds.modelName),
+                        itemType: 'model',
+                        modelName: ds.modelName
+                      });
+                    }
+                  });
+
+                  return labels;
+                }
+              },
+              onClick: (e, legendItem, legend) => {
+                const chart = legend.chart;
+                if (legendItem.itemType === 'segment') {
+                  const seg = legendItem.segmentKey;
+                  if (chartEffHiddenSegments.has(seg)) {
+                    chartEffHiddenSegments.delete(seg);
+                  } else {
+                    chartEffHiddenSegments.add(seg);
+                  }
+                } else if (legendItem.itemType === 'model') {
+                  const m = legendItem.modelName;
+                  if (chartEffHiddenModels.has(m)) {
+                    chartEffHiddenModels.delete(m);
+                  } else {
+                    chartEffHiddenModels.add(m);
+                  }
+                }
+
+                chart.data.datasets.forEach((ds, i) => {
+                  const isHidden = chartEffHiddenModels.has(ds.modelName) || chartEffHiddenSegments.has(ds.segmentType);
+                  chart.getDatasetMeta(i).hidden = isHidden ? true : null;
+                });
+                chart.update();
+              }
             },
             tooltip: {
               callbacks: {
-                label: ctx => `${ctx.dataset.label}: ${Number(ctx.raw).toLocaleString()} tok/$`
+                title: tooltipItems => {
+                  const item = tooltipItems[0];
+                  const ds = item.dataset;
+                  return `${item.label} — ${ds.modelName || ds.stack}`;
+                },
+                label: ctx => {
+                  const ds = ctx.dataset;
+                  const idx = ctx.dataIndex;
+                  const cr = ds.crData ? ds.crData[idx] : 0;
+                  const nonCached = ds.nonCachedData ? ds.nonCachedData[idx] : 0;
+                  const comp = ds.cData ? ds.cData[idx] : 0;
+                  const total = ds.totalTokensData ? ds.totalTokensData[idx] : 0;
+                  const hitRate = ds.hitRateData ? Number(ds.hitRateData[idx]).toFixed(1) : '0.0';
+
+                  const lines = [];
+                  if (!chartEffHiddenSegments.has('cr')) {
+                    lines.push(`⚡ Cached Read (cr): ${formatInt(cr)} tokens`);
+                  }
+                  if (!chartEffHiddenSegments.has('p-cr')) {
+                    lines.push(`📖 Non-Cached Read (p - cr): ${formatInt(nonCached)} tokens`);
+                  }
+                  if (!chartEffHiddenSegments.has('c')) {
+                    lines.push(`✍️ Completion (c): ${formatInt(comp)} tokens`);
+                  }
+                  lines.push('---------------------------------');
+                  lines.push(`📊 Total Tokens: ${formatInt(total)} (⚡ ${hitRate}% Cache Hit)`);
+                  return lines;
+                }
               }
             }
           },
           scales: {
-            y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(255,255,255,0.05)' } },
-            x: { ticks: { color: '#f8fafc', font: { size: 11 } }, grid: { display: false } }
+            x: {
+              stacked: true,
+              ticks: { color: '#f8fafc', font: { size: 11 } },
+              grid: { display: false }
+            },
+            y: {
+              stacked: true,
+              ticks: {
+                color: '#94a3b8',
+                callback: v => {
+                  if (v >= 1000000) return (v / 1000000).toFixed(1) + 'M';
+                  if (v >= 1000) return (v / 1000).toFixed(0) + 'k';
+                  return v;
+                }
+              },
+              grid: { color: 'rgba(255,255,255,0.05)' }
+            }
           }
         }
       });
+
+      // Apply initial segment & model hidden states
+      efficiencyChartInstance.data.datasets.forEach((ds, i) => {
+        const isHidden = chartEffHiddenModels.has(ds.modelName) || chartEffHiddenSegments.has(ds.segmentType);
+        if (isHidden) {
+          efficiencyChartInstance.getDatasetMeta(i).hidden = true;
+        }
+      });
+      if (chartEffHiddenModels.size > 0 || chartEffHiddenSegments.size > 0) {
+        efficiencyChartInstance.update();
+      }
 
       // Requests Chart
       if (requestsChartInstance) requestsChartInstance.destroy();
@@ -2459,8 +2813,9 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         if (selCase !== 'ALL' && r.caseName !== selCase) return false;
 
         const cfg = getRunModelConfig(r);
-        if (selModelType === 'SINGLE' && cfg.isMultiModel) return false;
-        if (selModelType === 'COMBO' && !cfg.isMultiModel) return false;
+        if (selModelType === 'HEADLESS' && cfg.isInteractive) return false;
+        if (selModelType === 'SINGLE' && (cfg.isMultiModel || cfg.isInteractive)) return false;
+        if (selModelType === 'COMBO' && (!cfg.isMultiModel || cfg.isInteractive)) return false;
         if (selModelType === 'INTERACTIVE' && !cfg.isInteractive) return false;
 
         const models = (r.data && r.data.runs) ? r.data.runs.map(pr => pr.model) : [];
@@ -2491,6 +2846,21 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
         const totalReq = metrics.totalRequests || 0;
         const succReq = metrics.successfulRequests || 0;
         const failReq = metrics.failedRequests || 0;
+        const promptTok = metrics.promptTokens || 0;
+        const compTok = metrics.completionTokens || 0;
+        const cacheReadTok = metrics.cacheReadTokens || 0;
+        const cacheWriteTok = metrics.cacheWriteTokens || 0;
+
+        const crSpan = cacheReadTok > 0
+          ? `<span style="color: #34d399;">cr: ${formatInt(cacheReadTok)}</span>`
+          : `cr: ${formatInt(cacheReadTok)}`;
+        const cwSpan = cacheWriteTok > 0
+          ? `<span style="color: #34d399;">cw: ${formatInt(cacheWriteTok)}</span>`
+          : `cw: ${formatInt(cacheWriteTok)}`;
+
+        const failSpan = failReq > 0
+          ? `<span style="color: #f87171;">Fail: ${formatInt(failReq)}</span>`
+          : `Fail: ${formatInt(failReq)}`;
 
         const modelBadges = Array.from(new Set(models)).map(m => getModelBadgeHtml(m)).join(' ');
 
@@ -2557,13 +2927,16 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
           <td>${modelCellHtml}</td>
           <td><span class="metric-value">${formatUSD(metrics.spendUSD)}</span></td>
           <td>
-            <div class="metric-value">${formatInt(metrics.totalTokens)}</div>
-            <div class="range-box">p: ${formatInt(metrics.promptTokens)}
-c: ${formatInt(metrics.completionTokens)}</div>
+            <div class="metric-value">${formatInt(metrics.totalTokens || 0)}</div>
+            <div class="range-box">p: ${formatInt(promptTok)}
+c: ${formatInt(compTok)}
+${crSpan}
+${cwSpan}</div>
           </td>
           <td>
             <div class="metric-value">${formatInt(totalReq)}</div>
-            <div class="range-box">Succ: ${formatInt(succReq)} | Fail: ${formatInt(failReq)}</div>
+            <div class="range-box">Succ: ${formatInt(succReq)}
+${failSpan}</div>
           </td>
           <td>
             <div class="metric-value">

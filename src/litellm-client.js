@@ -1,14 +1,16 @@
+import { defaults } from './config.js';
+
 /**
  * Makes an authenticated request to the LiteLLM Proxy API.
  * @param {string} endpoint - API endpoint relative path
- * @param {object} options - Request options including baseUrl and masterKey
- * @param {string} options.baseUrl - LiteLLM proxy base URL
- * @param {string} options.masterKey - LiteLLM master/admin API key
+ * @param {object} [options] - Request options including baseUrl and masterKey
+ * @param {string} [options.baseUrl] - LiteLLM proxy base URL
+ * @param {string} [options.masterKey] - LiteLLM master/admin API key
  * @param {object} [options.reqOptions] - Additional fetch options (method, body, headers, etc.)
  * @returns {Promise<any>} Response JSON object
  */
-export async function litellmRequest(endpoint, { baseUrl, masterKey, ...reqOptions } = {}) {
-  const cleanBaseUrl = baseUrl.replace(/\/+$/, '');
+export async function litellmRequest(endpoint, { baseUrl = defaults.baseUrl, masterKey = defaults.masterKey, ...reqOptions } = {}) {
+  const cleanBaseUrl = (baseUrl || 'http://localhost:4000').replace(/\/+$/, '');
   const url = `${cleanBaseUrl}${endpoint}`;
 
   const response = await fetch(url, {
@@ -72,14 +74,22 @@ export async function createTestUser({ baseUrl, masterKey, caseName, runTimestam
  * @returns {Promise<object>} Usage data and user info
  */
 export async function fetchUserMetrics({ baseUrl, masterKey, userId }) {
-  const today = new Date().toISOString().split('T')[0];
+  // Query daily activity for the dedicated user. Omit date filter to prevent UTC/local date boundary clipping.
+  let usageData = null;
+  try {
+    usageData = await litellmRequest(`/user/daily/activity?user_id=${encodeURIComponent(userId)}`, {
+      baseUrl,
+      masterKey,
+    });
+  } catch {
+    const today = new Date().toISOString().split('T')[0];
+    usageData = await litellmRequest(
+      `/user/daily/activity?user_id=${encodeURIComponent(userId)}&start_date=${today}&end_date=${today}`,
+      { baseUrl, masterKey }
+    );
+  }
 
-  const usageData = await litellmRequest(
-    `/user/daily/activity?user_id=${userId}&start_date=${today}&end_date=${today}`,
-    { baseUrl, masterKey }
-  );
-
-  const userInfo = await litellmRequest(`/user/info?user_id=${userId}`, {
+  const userInfo = await litellmRequest(`/user/info?user_id=${encodeURIComponent(userId)}`, {
     baseUrl,
     masterKey,
   });
