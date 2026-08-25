@@ -137,7 +137,6 @@ export async function runTestCase(caseName, options, parentDir) {
         caseName,
         secretKey,
         model: options.modelExecution,
-        mode: 'auto',
         promptText: promptTextExec,
         baseUrl: options.baseUrl,
         outputFormat: options.outputFormat,
