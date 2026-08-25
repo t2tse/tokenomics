@@ -1,7 +1,7 @@
 {
   "defaults": {
     "baseUrl": "http://localhost:4000",
-    "delay": 3000
+    "delay": 10000
   },
   "runs": [
     {

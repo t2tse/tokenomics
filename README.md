@@ -144,7 +144,7 @@ npm run build
 | `--model <name>` | Model override for simple mode | `claude-sonnet` |
 | `--model-planning <name>`| Model override for planning phase in `plan-execute` mode | `claude-sonnet` |
 | `--model-execution <name>`| Model override for execution phase in `plan-execute` mode | `gemini-flash` |
-| `--delay <ms>` | Delay (ms) before fetching stats (allows DB logs to flush) | `3000` |
+| `--delay <ms>` | Delay (ms) before fetching stats (allows DB logs to flush) | `10000` |
 | `--base-url <url>`| Custom base URL of LiteLLM proxy | `http://localhost:4000` |
 | `--master-key <key>`| LiteLLM Admin Master Key | `sk-XXXXX` |
 | `--help, -h` | Show CLI help message | |
@@ -169,7 +169,7 @@ When running across all use cases, the harness reads `test-plan.json` to assign 
 {
   "defaults": {
     "baseUrl": "http://localhost:4000",
-    "delay": 3000
+    "delay": 10000
   },
   "runs": [
     {

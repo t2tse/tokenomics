@@ -18,7 +18,7 @@ export const defaults = {
   outputFormat: 'text',
   baseUrl: 'http://localhost:4000',
   masterKey: process.env.LITELLM_API_KEY || 'sk-9999',
-  delay: 3000,
+  delay: 10000,
   case: null,
   config: 'test-plan.json',
 };
@@ -49,7 +49,7 @@ Options:
   --model-execution <name> Model override for execution phase in plan-execute mode (default: 'gemini-flash')
   --base-url <url>         LiteLLM proxy endpoint (default: 'http://localhost:4000')
   --master-key <key>       LiteLLM master/admin API key (default: env LITELLM_API_KEY or 'sk-9999')
-  --delay <ms>             Delay in ms before querying LiteLLM spend APIs after runs (default: 3000)
+  --delay <ms>             Delay in ms before querying LiteLLM spend APIs after runs (default: 10000)
   --help, -h               Show this help message
 
 Models available in LiteLLM:
