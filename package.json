@@ -10,6 +10,7 @@
   "scripts": {
     "build": "esbuild src/main.js --bundle --platform=node --format=esm --banner:js=\"#!/usr/bin/env node\" --footer:js=\"main().catch(err => { console.error(err); process.exit(1); });\" --outfile=bin/tokenomics && chmod +x bin/tokenomics",
     "test:unit": "node --test test/*.test.js",
+    "patch:metrics": "node src/patch-metrics.js",
     "report:manifest": "node src/generate-manifest.js",
     "report": "node src/generate-manifest.js && node -e \"console.log('\\n📊 REPORT Dashboard URL: http://localhost:8080/REPORT.html\\n')\" && npx serve . -p 8080"
   },
