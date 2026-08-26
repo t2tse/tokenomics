@@ -61,6 +61,29 @@ describe('config module', () => {
     assert.equal(optsYolo.yolo, true);
   });
 
+  it('should parse evaluation flags correctly', () => {
+    const optsDefault = parseArgs([]);
+    assert.equal(optsDefault.evaluation, true);
+    assert.equal(optsDefault.evalModel, 'gemini-pro');
+    assert.equal(optsDefault.evaluate, false);
+    assert.equal(optsDefault.reEvaluate, false);
+
+    const optsNoEval = parseArgs(['--no-eval']);
+    assert.equal(optsNoEval.evaluation, false);
+
+    const optsEvalModel = parseArgs(['--eval-model', 'claude-3-5-sonnet']);
+    assert.equal(optsEvalModel.evalModel, 'claude-3-5-sonnet');
+    assert.equal(optsEvalModel.evaluation, true);
+
+    const optsEvaluate = parseArgs(['--evaluate']);
+    assert.equal(optsEvaluate.evaluate, true);
+    assert.equal(optsEvaluate.reEvaluate, false);
+
+    const optsReEvaluate = parseArgs(['--re-evaluate']);
+    assert.equal(optsReEvaluate.evaluate, true);
+    assert.equal(optsReEvaluate.reEvaluate, true);
+  });
+
   it('resolveCaseOptions merges testPlan settings and CLI overrides', () => {
     const testPlan = {
       defaults: { delay: 4000 },

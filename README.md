@@ -141,6 +141,10 @@ npm run build
 | `--mode <type>` | Run mode override: `simple` or `plan-execute` | `simple` |
 | `--interactive` | Run coding agent in interactive mode instead of headless mode | `false` |
 | `--no-walkthrough` | Disable appending walkthrough prompt doc instructions in headless mode | *Off when passed* (default is on) |
+| `--no-eval` | Disable automated walkthrough quality evaluation on successful test runs | *Off when passed* (default is on) |
+| `--eval-model <name>` | Model used to critique walkthrough quality and prompt compliance | `gemini-pro` |
+| `--evaluate` | Standalone mode: evaluate un-evaluated successful test run walkthroughs (skips already scored runs) | `false` |
+| `--re-evaluate` | Standalone mode: re-evaluate all successful test runs (forces re-scoring of already evaluated runs) | `false` |
 | `--yolo` | Override agent permission mode to `bypassPermissions` in headless execution | `false` would default to `auto` with classifier to block risky actions |
 | `--model <name>` | Model override for simple mode | `claude-sonnet` |
 | `--model-planning <name>`| Model override for planning phase in `plan-execute` mode | `claude-sonnet` |
@@ -149,6 +153,33 @@ npm run build
 | `--base-url <url>`| Custom base URL of LiteLLM proxy | `http://localhost:4000` |
 | `--master-key <key>`| LiteLLM Admin Master Key | `sk-XXXXX` |
 | `--help, -h` | Show CLI help message | |
+
+---
+
+## ⚖️ Walkthrough Quality & Prompt Compliance Evaluator
+
+To ensure each successful test run truly accomplished what it was asked in the prompt (and verify the quality of the generated `AGENT-WALKTHROUGH.md`), the harness includes an **LLM-as-a-Judge Evaluation Engine**.
+
+### 4 Evaluation Pillars & Scoring Rubric (0–100)
+1. **Prompt Compliance & Completeness (40 pts)**: Evaluates whether all explicit requirements, endpoints, features, and constraints from `PROMPT.md` / `PROMPT-PLAN.md` & `PROMPT-EXEC.md` are documented and evidenced.
+2. **Grounding & Evidence (25 pts)**: Verifies that claimed files and implementation match the actual files generated in the run directory.
+3. **Reproducibility & Instructions (20 pts)**: Assesses whether the setup, launch, run, and review instructions are accurate and executable locally without global installs.
+4. **Hygiene & Cleanup (15 pts)**: Evaluates whether teardown/cleanup steps and edge cases are documented without irrelevant steps.
+
+> **Note**: Failed test runs (`success: false`) are ignored during quality evaluation.
+
+### Standalone Evaluation & Re-Evaluation
+You can evaluate historical successful test runs at any time without re-executing agents:
+```bash
+# 1. Evaluate un-evaluated successful historical runs (skips already evaluated runs)
+./bin/tokenomics --evaluate
+
+# 2. Force re-evaluation of all successful runs (re-scores already evaluated runs)
+./bin/tokenomics --re-evaluate
+
+# 3. Re-evaluate a specific case with a custom judge model
+./bin/tokenomics --re-evaluate --case one-to-two-feature-request --eval-model claude-sonnet
+```
 
 ### Headless vs Interactive Execution
 

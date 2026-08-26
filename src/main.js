@@ -5,9 +5,109 @@ import { parseArgs, resolveCaseOptions } from './config.js';
 import { getFormattedTimestamp } from './utils/time.js';
 import { runTestCase } from './runner.js';
 
+import { generateManifest } from './generate-manifest.js';
+import { evaluateWalkthrough } from './evaluator.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const parentDir = path.resolve(__dirname, '..');
+
+/**
+ * Executes standalone walkthrough quality evaluations across existing successful test runs.
+ * @param {object} options - CLI options
+ * @param {string} [baseDir=parentDir] - Root project directory
+ */
+export async function runStandaloneEvaluations(options, baseDir = parentDir) {
+  const useCasesDir = path.join(baseDir, 'use-cases');
+  if (!fs.existsSync(useCasesDir)) {
+    console.error(`❌ Error: use-cases directory not found at ${useCasesDir}`);
+    process.exit(1);
+  }
+
+  const caseDirs = fs.readdirSync(useCasesDir, { withFileTypes: true })
+    .filter((e) => e.isDirectory() && !e.name.startsWith('.'))
+    .map((e) => e.name)
+    .filter((c) => !options.case || c === options.case);
+
+  if (options.case && caseDirs.length === 0) {
+    console.error(`❌ Error: Specified case "${options.case}" not found in use-cases/`);
+    process.exit(1);
+  }
+
+  console.log(`======================================================================`);
+  console.log(`⚖️ Standalone Walkthrough Quality & Prompt Compliance Evaluator`);
+  console.log(`----------------------------------------------------------------------`);
+  console.log(`🔗 LiteLLM proxy Base URL:     ${options.baseUrl}`);
+  console.log(`🤖 Judge Model:                ${options.evalModel}`);
+  console.log(`📁 Target Cases:               ${options.case || 'All discovered cases'}`);
+  console.log(`======================================================================`);
+
+  let totalEvaluated = 0;
+  let totalSkipped = 0;
+  let totalScoreSum = 0;
+
+  for (const caseName of caseDirs) {
+    const casePath = path.join(useCasesDir, caseName);
+    const files = fs.readdirSync(casePath);
+    const resultFiles = files.filter((f) => f.startsWith('test-results-') && f.endsWith('.json'));
+
+    for (const resFile of resultFiles) {
+      const resFilePath = path.join(casePath, resFile);
+      const match = resFile.match(/^test-results-(.+)\.json$/);
+      const timestamp = match ? match[1] : '';
+      const outputDir = path.join(casePath, `output-${timestamp}`);
+
+      let resData = null;
+      try {
+        resData = JSON.parse(fs.readFileSync(resFilePath, 'utf8'));
+      } catch {
+        continue;
+      }
+
+      // Skip failed runs as specified
+      if (resData.success !== true) {
+        continue;
+      }
+
+      // Skip already evaluated runs unless --re-evaluate flag is passed
+      if (!options.reEvaluate && resData.evaluation) {
+        console.log(`⏩ [SKIP] Case: "${caseName}" | Run: ${timestamp} (already evaluated: ${resData.evaluation.score ?? 0}/100. Use --re-evaluate to force re-evaluation)`);
+        totalSkipped++;
+        continue;
+      }
+
+      console.log(`\n📋 [EVAL TARGET] Case: "${caseName}" | Run: ${timestamp}`);
+      const { evaluation, evalMetrics } = await evaluateWalkthrough({
+        caseDir: casePath,
+        outputDir,
+        options,
+      });
+
+      resData.evaluation = evaluation;
+      resData.evalMetrics = evalMetrics;
+
+      fs.writeFileSync(resFilePath, JSON.stringify(resData, null, 2), 'utf8');
+      totalEvaluated++;
+      totalScoreSum += evaluation.score || 0;
+    }
+  }
+
+  try {
+    generateManifest();
+  } catch (mErr) {
+    console.error(`⚠️ [MANIFEST] Failed updating manifest: ${mErr.message}`);
+  }
+
+  console.log(`\n======================================================================`);
+  console.log(`🎉 Standalone Evaluations Completed!`);
+  console.log(`======================================================================`);
+  console.log(`  📦 Total Runs Evaluated:      ${totalEvaluated}`);
+  if (totalSkipped > 0) {
+    console.log(`  ⏩ Total Runs Skipped:        ${totalSkipped} (already evaluated)`);
+  }
+  console.log(`  ⭐ Average Quality Score:     ${totalEvaluated > 0 ? (totalScoreSum / totalEvaluated).toFixed(1) : 0} / 100`);
+  console.log(`======================================================================\n`);
+}
 
 /**
  * Formats and prints scheduled test case runs in a clean ASCII table.
@@ -60,6 +160,11 @@ export function printTestPlanTable(runsToExecute, options, testPlan) {
  */
 export async function main(cliArgs) {
   const options = parseArgs(cliArgs);
+
+  if (options.evaluate) {
+    await runStandaloneEvaluations(options);
+    return;
+  }
 
   // Determine path to test plan configuration file
   const configPath = path.isAbsolute(options.config)

@@ -6,6 +6,7 @@ import { createTestUser, fetchUserMetrics } from './litellm-client.js';
 import { runCodingAgent } from './agents/agent.js';
 import { DEFAULT_AGENT } from './config.js';
 import { generateManifest } from './generate-manifest.js';
+import { evaluateWalkthrough } from './evaluator.js';
 
 export const WALKTHROUGH_PROMPT = `After you finish all the tasks above, focus on the output you produced in the current output folder and do the following before hanging up
 1. Test out the app on your own for all functionality and provide a detailed AGENT-WALKTHROUGH.md on how to setup, run, make any further changes and clean up steps.
@@ -260,7 +261,26 @@ export async function runTestCase(caseName, options, parentDir) {
       })),
     };
 
+    // 6. Optional Walkthrough Quality & Prompt Compliance Evaluation on successful runs
+    if (success && options.evaluation !== false) {
+      try {
+        console.log(`\n🔍 [EVALUATION] Initiating Walkthrough Quality Evaluation for "${caseName}"...`);
+        const { evaluation, evalMetrics } = await evaluateWalkthrough({
+          caseDir,
+          outputDir,
+          options,
+        });
+        testCaseResult.evaluation = evaluation;
+        testCaseResult.evalMetrics = evalMetrics;
+      } catch (eErr) {
+        console.error(`⚠️ [EVALUATION] Walkthrough evaluation encountered an error: ${eErr.message}`);
+      }
+    }
+
     console.log(`🏁 [FINISHED] Test Case: "${caseName}" Result: ${success ? '✅ SUCCESS' : '❌ FAILED'}`);
+    if (testCaseResult.evaluation) {
+      console.log(`   ⚖️ Quality Score: ${testCaseResult.evaluation.score}/100 [${testCaseResult.evaluation.status}]`);
+    }
     console.log(`   ⏱️ Wall-Clock Duration: ${testCaseResult.totalWallClockDurationSeconds.toFixed(2)}s`);
     console.log(`   💰 Spend: $${testCaseResult.metrics.spendUSD.toFixed(6)}`);
     console.log(`   🪙 Tokens: ${testCaseResult.metrics.totalTokens} (Prompt: ${testCaseResult.metrics.promptTokens}, Completion: ${testCaseResult.metrics.completionTokens}, Cache Read: ${testCaseResult.metrics.cacheReadTokens}, Cache Write: ${testCaseResult.metrics.cacheWriteTokens})`);

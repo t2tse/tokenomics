@@ -96,15 +96,30 @@ export function generateManifest() {
   // Sort runs by timestamp descending (newest first)
   runs.sort((a, b) => b.timestamp.localeCompare(a.timestamp));
 
+  // Compute aggregate summary statistics
+  let evaluatedCount = 0;
+  let totalScore = 0;
+  for (const r of runs) {
+    if (r.data && r.data.evaluation && typeof r.data.evaluation.score === 'number') {
+      evaluatedCount++;
+      totalScore += r.data.evaluation.score;
+    }
+  }
+
   const manifest = {
     generatedAt: new Date().toISOString(),
     useCases: discoveredUseCases.sort(),
+    summary: {
+      totalRuns: runs.length,
+      evaluatedRuns: evaluatedCount,
+      averageQualityScore: evaluatedCount > 0 ? Number((totalScore / evaluatedCount).toFixed(1)) : null,
+    },
     runs,
   };
 
   const manifestPath = path.join(rootDir, 'reports-manifest.json');
   fs.writeFileSync(manifestPath, JSON.stringify(manifest, null, 2), 'utf8');
-  console.log(`📋 [MANIFEST] Updated reports-manifest.json with ${runs.length} test run(s) across ${discoveredUseCases.length} use case(s).`);
+  console.log(`📋 [MANIFEST] Updated reports-manifest.json with ${runs.length} test run(s) across ${discoveredUseCases.length} use case(s) (${evaluatedCount} evaluated).`);
 
   return manifest;
 }

@@ -903,6 +903,14 @@
         <div class="kpi-value" id="kpiTotalRuns">0</div>
         <div class="kpi-sub" id="kpiSuccessRate">0% Success Rate</div>
       </div>
+      <div class="kpi-card">
+        <div class="kpi-title">
+          <span>Walkthrough Quality</span>
+          <span class="tooltip-icon" data-tooltip-title="Walkthrough Quality & Prompt Compliance" data-tooltip-desc="Average quality score (0-100) from automated LLM-as-a-judge evaluations assessing prompt compliance, grounding, and actionability.">ℹ️</span>
+        </div>
+        <div class="kpi-value" id="kpiAvgQuality">--</div>
+        <div class="kpi-sub" id="kpiQualitySub">0 runs evaluated</div>
+      </div>
     </div>
 
     <!-- Concise Metrics Summary & Glossary Guide -->
@@ -1216,6 +1224,10 @@
               <th>API Requests</th>
               <th>Duration (s)</th>
               <th>Status</th>
+              <th>
+                Quality
+                <span class="tooltip-icon" data-tooltip-title="Walkthrough Quality & Prompt Compliance" data-tooltip-desc="Quality score (0-100) and prompt compliance status judged by automated LLM evaluation.">ℹ️</span>
+              </th>
               <th>Output Artifacts</th>
             </tr>
           </thead>
@@ -1852,10 +1864,17 @@
       let totalFailedRequests = 0;
       let totalRunsCount = globalManifestData.runs.length;
       let successRunsCount = 0;
+      let evaluatedRunsCount = 0;
+      let totalQualityScore = 0;
 
       globalManifestData.runs.forEach(r => {
         const isSuccess = Boolean(r.data.success);
         if (isSuccess) successRunsCount++;
+
+        if (r.data && r.data.evaluation && typeof r.data.evaluation.score === 'number') {
+          evaluatedRunsCount++;
+          totalQualityScore += r.data.evaluation.score;
+        }
 
         if (excludeFailures && !isSuccess) return;
 
@@ -1877,6 +1896,7 @@
       const avgSpend = effectiveRunsCount > 0 ? (totalSpend / effectiveRunsCount) : 0;
       const avgCacheHitRate = promptTokens > 0 ? ((cacheReadTokens / promptTokens) * 100) : 0;
       const successRatePct = totalRunsCount > 0 ? Math.round((successRunsCount / totalRunsCount) * 100) : 0;
+      const avgQuality = evaluatedRunsCount > 0 ? (totalQualityScore / evaluatedRunsCount) : null;
 
       document.getElementById('kpiTotalSpend').innerText = formatUSD(totalSpend);
       document.getElementById('kpiAvgSpend').innerText = `Avg ${formatUSD(avgSpend)} / run`;
@@ -1891,6 +1911,15 @@
 
       document.getElementById('kpiTotalRuns').innerText = totalRunsCount;
       document.getElementById('kpiSuccessRate').innerText = `${successRatePct}% Success Rate (${successRunsCount}/${totalRunsCount}) · ${formatInt(totalRequests)} reqs (${formatInt(totalSuccessfulRequests)} succ / ${formatInt(totalFailedRequests)} fail)`;
+
+      const kpiQualityEl = document.getElementById('kpiAvgQuality');
+      const kpiQualitySubEl = document.getElementById('kpiQualitySub');
+      if (kpiQualityEl) {
+        kpiQualityEl.innerText = avgQuality !== null ? `${avgQuality.toFixed(1)} / 100` : '--';
+      }
+      if (kpiQualitySubEl) {
+        kpiQualitySubEl.innerText = evaluatedRunsCount > 0 ? `${evaluatedRunsCount} run(s) evaluated` : '0 runs evaluated';
+      }
     }
 
     // High Level Summary grouped by (Use Case, Model Config) with Best/Worst Highlights per Use Case
@@ -2925,6 +2954,22 @@ Max: ${item.maxDuration.toFixed(1)}s</div>
           artifactPills += `<button class="art-pill" onclick="openArtifact('${artifacts.prompt}', 'PROMPT.md', 'markdown', '${r.id}')">🔍 Prompt</button>`;
         }
 
+        const evalData = r.data && r.data.evaluation;
+        let qualityCellHtml = '';
+        if (evalData && typeof evalData.score === 'number') {
+          const statusClass = evalData.status === 'PASS' ? 'status-success' : (evalData.status === 'PARTIAL' ? 'badge-amber' : 'status-fail');
+          qualityCellHtml = `
+            <div style="display: flex; flex-direction: column; gap: 0.25rem; align-items: flex-start;">
+              <span class="badge ${statusClass}" style="font-weight: 700; font-size: 0.75rem;">${evalData.score}/100 [${evalData.status}]</span>
+              <button class="art-pill" style="font-size: 0.7rem; padding: 0.15rem 0.45rem; background: rgba(99, 102, 241, 0.2); border-color: rgba(99, 102, 241, 0.5); color: #c7d2fe;" onclick="openEvaluation('${r.id}')">⚖️ Critique</button>
+            </div>
+          `;
+        } else if (!isSuccess) {
+          qualityCellHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">Skipped (Failed)</span>`;
+        } else {
+          qualityCellHtml = `<span style="color: var(--text-muted); font-size: 0.75rem;">Not Evaluated</span>`;
+        }
+
         const tr = document.createElement('tr');
         tr.id = `run-row-${r.id}`;
         tr.innerHTML = `
@@ -2963,10 +3008,165 @@ ${failSpan}</div>
               ${isSuccess ? '✅ SUCCESS' : '❌ FAILED'}
             </span>
           </td>
+          <td>${qualityCellHtml}</td>
           <td><div class="art-pills-group">${artifactPills || '<span style="color: var(--text-muted); font-size: 0.75rem;">None</span>'}</div></td>
         `;
         tbody.appendChild(tr);
       });
+    }
+
+    // Modal Walkthrough Quality Evaluation Viewer
+    function openEvaluation(runId) {
+      if (!globalManifestData || !globalManifestData.runs) return;
+      const run = globalManifestData.runs.find(r => r.id === runId);
+      if (!run || !run.data || !run.data.evaluation) return;
+
+      if (runId) {
+        document.querySelectorAll('#runsTableBody tr').forEach(row => row.classList.remove('selected-row'));
+        const targetRow = document.getElementById(`run-row-${runId}`);
+        if (targetRow) {
+          targetRow.classList.add('selected-row');
+          targetRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+      }
+
+      const evalData = run.data.evaluation;
+      const evalMetrics = run.data.evalMetrics || {};
+      const modal = document.getElementById('artifactModal');
+      const modalTitle = document.getElementById('modalTitle');
+      const modalBody = document.getElementById('modalBody');
+
+      modalTitle.innerHTML = `<span>⚖️</span> Walkthrough Quality & Prompt Compliance Critique <span style="font-size: 0.8rem; color: var(--text-muted);">[Run: ${runId}]</span>`;
+
+      const statusBadge = evalData.status === 'PASS' 
+        ? '<span class="badge status-success">PASS</span>'
+        : (evalData.status === 'PARTIAL' ? '<span class="badge badge-amber">PARTIAL</span>' : '<span class="badge status-fail">FAIL</span>');
+
+      const pillars = evalData.pillars || {};
+      const checklist = evalData.checklist || [];
+      const critique = evalData.critique || {};
+
+      let checklistHtml = '';
+      if (checklist.length > 0) {
+        checklistHtml = `
+          <div style="margin-top: 1.5rem;">
+            <h4 style="color: var(--text-primary); font-size: 0.95rem; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>📋</span> Prompt Requirement Checklist
+            </h4>
+            <table class="summary-table" style="font-size: 0.82rem;">
+              <thead>
+                <tr>
+                  <th style="width: 35%;">Requirement</th>
+                  <th style="width: 15%;">Status</th>
+                  <th>Evidence / Evaluation Notes</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${checklist.map(item => {
+                  const itemBadge = item.status === 'MET'
+                    ? '<span class="badge status-success">MET</span>'
+                    : (item.status === 'PARTIALLY_MET' ? '<span class="badge badge-amber">PARTIAL</span>' : '<span class="badge status-fail">NOT MET</span>');
+                  return `
+                    <tr>
+                      <td style="color: var(--text-primary); font-weight: 500;">${escapeHTML(item.requirement)}</td>
+                      <td>${itemBadge}</td>
+                      <td style="color: var(--text-secondary);">${escapeHTML(item.evidence || '')}</td>
+                    </tr>
+                  `;
+                }).join('')}
+              </tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      let strengthsHtml = (critique.strengths && critique.strengths.length > 0)
+        ? `<ul style="margin: 0.4rem 0 0 1.2rem; color: #34d399; font-size: 0.85rem;">${critique.strengths.map(s => `<li>${escapeHTML(s)}</li>`).join('')}</ul>`
+        : '<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">None noted.</p>';
+
+      let weaknessesHtml = (critique.weaknesses && critique.weaknesses.length > 0)
+        ? `<ul style="margin: 0.4rem 0 0 1.2rem; color: #f87171; font-size: 0.85rem;">${critique.weaknesses.map(w => `<li>${escapeHTML(w)}</li>`).join('')}</ul>`
+        : '<p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.3rem;">None identified.</p>';
+
+      let feedbackHtml = critique.actionableFeedback
+        ? `<div style="background: rgba(99, 102, 241, 0.1); border-left: 3px solid var(--accent-indigo); padding: 0.75rem 1rem; border-radius: 6px; margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-primary);">${escapeHTML(critique.actionableFeedback)}</div>`
+        : '';
+
+      modalBody.innerHTML = `
+        <div style="padding: 0.5rem 0;">
+          <!-- Score Summary Header -->
+          <div style="display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1rem; background: rgba(30, 41, 59, 0.7); border: 1px solid var(--card-border); border-radius: 12px; padding: 1.25rem; margin-bottom: 1.25rem;">
+            <div>
+              <div style="font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 0.25rem;">Overall Walkthrough Quality Score</div>
+              <div style="display: flex; align-items: baseline; gap: 0.75rem;">
+                <span style="font-size: 2.2rem; font-weight: 800; color: var(--text-primary);">${evalData.score} <span style="font-size: 1.1rem; color: var(--text-muted); font-weight: 500;">/ 100</span></span>
+                ${statusBadge}
+              </div>
+            </div>
+            <div style="text-align: right; font-size: 0.8rem; color: var(--text-secondary);">
+              <div><strong>Judge Model:</strong> <code>${escapeHTML(evalMetrics.model || 'unknown')}</code></div>
+              <div><strong>Evaluation Latency:</strong> ${(evalMetrics.wallClockDurationSeconds || 0).toFixed(2)}s</div>
+              <div><strong>Tokens Used:</strong> ${formatInt(evalMetrics.totalTokens || 0)}</div>
+            </div>
+          </div>
+
+          <!-- 4 Pillars Breakdown Grid -->
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 0.75rem; margin-bottom: 1.25rem;">
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.85rem;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">1. Prompt Compliance</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-indigo); margin-top: 0.25rem;">
+                ${pillars.promptCompliance ? `${pillars.promptCompliance.score} / ${pillars.promptCompliance.max}` : '-- / 40'}
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.85rem;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">2. Grounding & Truth</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-cyan); margin-top: 0.25rem;">
+                ${pillars.grounding ? `${pillars.grounding.score} / ${pillars.grounding.max}` : '-- / 25'}
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.85rem;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">3. Reproducibility</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-emerald); margin-top: 0.25rem;">
+                ${pillars.reproducibility ? `${pillars.reproducibility.score} / ${pillars.reproducibility.max}` : '-- / 20'}
+              </div>
+            </div>
+            <div style="background: rgba(15, 23, 42, 0.6); border: 1px solid var(--card-border); border-radius: 10px; padding: 0.85rem;">
+              <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">4. Hygiene & Cleanup</div>
+              <div style="font-size: 1.25rem; font-weight: 700; color: var(--accent-amber); margin-top: 0.25rem;">
+                ${pillars.hygiene ? `${pillars.hygiene.score} / ${pillars.hygiene.max}` : '-- / 15'}
+              </div>
+            </div>
+          </div>
+
+          <!-- Prompt Checklist -->
+          ${checklistHtml}
+
+          <!-- Critique & Feedback -->
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.25rem;">
+            <div style="background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2); border-radius: 10px; padding: 1rem;">
+              <h5 style="color: #34d399; font-size: 0.85rem; margin: 0; display: flex; align-items: center; gap: 0.3rem;">
+                <span>✨</span> Strengths
+              </h5>
+              ${strengthsHtml}
+            </div>
+            <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 10px; padding: 1rem;">
+              <h5 style="color: #f87171; font-size: 0.85rem; margin: 0; display: flex; align-items: center; gap: 0.3rem;">
+                <span>⚠️</span> Weaknesses & Gaps
+              </h5>
+              ${weaknessesHtml}
+            </div>
+          </div>
+
+          <!-- Actionable Feedback Box -->
+          ${feedbackHtml ? `
+            <div style="margin-top: 1rem;">
+              <h5 style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: 0.4rem;">💡 Actionable Guidance</h5>
+              ${feedbackHtml}
+            </div>
+          ` : ''}
+        </div>
+      `;
+      modal.classList.add('active');
     }
 
     // Modal Artifact Viewer

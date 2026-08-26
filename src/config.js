@@ -13,6 +13,10 @@ export const defaults = {
   interactive: false,
   walkthrough: true,
   yolo: false,
+  evaluation: true,
+  evalModel: 'gemini-pro',
+  evaluate: false,
+  reEvaluate: false,
   model: 'claude-sonnet',
   modelPlanning: 'claude-sonnet',
   modelExecution: 'gemini-flash',
@@ -45,6 +49,10 @@ Options:
   --mode <type>            Run mode override: 'simple' or 'plan-execute' (default: 'simple')
   --interactive            Run coding agent in interactive mode instead of headless mode (default: false)
   --no-walkthrough         Disable appending walkthrough prompt doc instructions in headless mode (default: walkthrough is on)
+  --no-eval                Disable automated walkthrough quality evaluation on successful test runs (default: eval is on)
+  --eval-model <name>      Model for judging walkthrough quality and prompt compliance (default: 'gemini-pro')
+  --evaluate               Standalone mode: evaluate un-evaluated successful test run walkthroughs
+  --re-evaluate            Standalone mode: re-evaluate all successful test runs (including already evaluated)
   --yolo                   Override agent permission mode to 'bypassPermissions' in headless execution (default: false)
   --model <name>           Model override for simple mode (default: 'claude-sonnet')
   --model-planning <name>  Model override for planning phase in plan-execute mode (default: 'claude-sonnet')
@@ -103,6 +111,21 @@ export function parseArgs(args = process.argv.slice(2)) {
     } else if (arg === '--no-walkthrough') {
       options.walkthrough = false;
       explicitFlags.add('walkthrough');
+    } else if (arg === '--no-eval') {
+      options.evaluation = false;
+      explicitFlags.add('evaluation');
+    } else if (arg === '--eval-model') {
+      options.evalModel = getValue(i, arg);
+      i++;
+      explicitFlags.add('evalModel');
+    } else if (arg === '--evaluate') {
+      options.evaluate = true;
+      explicitFlags.add('evaluate');
+    } else if (arg === '--re-evaluate') {
+      options.evaluate = true;
+      options.reEvaluate = true;
+      explicitFlags.add('evaluate');
+      explicitFlags.add('reEvaluate');
     } else if (arg === '--yolo') {
       options.yolo = true;
       explicitFlags.add('yolo');
@@ -182,6 +205,9 @@ export function resolveCaseOptions(caseInput, globalOptions, testPlan) {
     interactive: globalOptions.interactive,
     walkthrough: globalOptions.walkthrough,
     yolo: globalOptions.yolo,
+    evaluation: globalOptions.evaluation,
+    evalModel: globalOptions.evalModel,
+    evaluate: globalOptions.evaluate,
     baseUrl: globalOptions.baseUrl,
     masterKey: globalOptions.masterKey,
     delay: globalOptions.delay,
