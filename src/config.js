@@ -1,11 +1,23 @@
-/**
- * Global default coding agent name.
- * Swap this single variable to change the default agent across the application.
- */
-export const DEFAULT_AGENT = 'claude';
+// Load environment variables from .env file if available (Node.js 20.6+)
+if (typeof process.loadEnvFile === 'function') {
+  try {
+    process.loadEnvFile();
+  } catch {
+    // .env file not found or inaccessible - continue with default fallbacks
+  }
+}
 
 /**
- * Default configuration options
+ * Global default coding agent name.
+ * Configured via TOKENOMICS_AGENT or fallback to 'claude'.
+ */
+export const DEFAULT_AGENT = process.env.TOKENOMICS_AGENT || 'claude';
+
+/**
+ * Default configuration options.
+ * Note: masterKey, evalModel, model, modelPlanning, and modelExecution do not have
+ * hardcoded fallback values and must be provided via environment variables, .env,
+ * CLI flags, or test plan configurations.
  */
 export const defaults = {
   agent: DEFAULT_AGENT,
@@ -13,19 +25,19 @@ export const defaults = {
   interactive: false,
   walkthrough: true,
   yolo: false,
-  evaluation: true,
-  evalModel: 'gemini-pro',
+  evaluation: process.env.TOKENOMICS_EVALUATION !== undefined ? process.env.TOKENOMICS_EVALUATION !== 'false' : true,
+  evalModel: process.env.TOKENOMICS_EVAL_MODEL || null,
   evaluate: false,
   reEvaluate: false,
-  model: 'claude-sonnet',
-  modelPlanning: 'claude-sonnet',
-  modelExecution: 'gemini-flash',
+  model: process.env.TOKENOMICS_MODEL || null,
+  modelPlanning: process.env.TOKENOMICS_MODEL_PLANNING || null,
+  modelExecution: process.env.TOKENOMICS_MODEL_EXECUTION || null,
   outputFormat: 'text',
-  baseUrl: 'http://localhost:4000',
-  masterKey: process.env.LITELLM_API_KEY || 'sk-9999',
-  delay: 10000,
+  baseUrl: process.env.LITELLM_BASE_URL || 'http://localhost:4000',
+  masterKey: process.env.LITELLM_MASTER_KEY || null,
+  delay: parseInt(process.env.TOKENOMICS_DELAY || '10000', 10),
   case: null,
-  config: 'test-plan.json',
+  config: process.env.TOKENOMICS_CONFIG || 'test-plan.json',
 };
 
 /**
@@ -45,27 +57,22 @@ Options:
   --agent <name>           Coding agent engine to run (default: '${DEFAULT_AGENT}')
   --case <name>            Name of specific test case directory to run (e.g. zero-to-one-vibe-coding).
                            If omitted, runs all available test cases using the test plan config file.
-  --config <path>          Path to test plan JSON configuration file (default: 'test-plan.json')
+  --config <path>          Path to test plan JSON configuration file (default: '${defaults.config}')
   --mode <type>            Run mode override: 'simple' or 'plan-execute' (default: 'simple')
   --interactive            Run coding agent in interactive mode instead of headless mode (default: false)
   --no-walkthrough         Disable appending walkthrough prompt doc instructions in headless mode (default: walkthrough is on)
   --no-eval                Disable automated walkthrough quality evaluation on successful test runs (default: eval is on)
-  --eval-model <name>      Model for judging walkthrough quality and prompt compliance (default: 'gemini-pro')
+  --eval-model <name>      Model for judging walkthrough quality and prompt compliance (env: TOKENOMICS_EVAL_MODEL)
   --evaluate               Standalone mode: evaluate un-evaluated successful test run walkthroughs
   --re-evaluate            Standalone mode: re-evaluate all successful test runs (including already evaluated)
   --yolo                   Override agent permission mode to 'bypassPermissions' in headless execution (default: false)
-  --model <name>           Model override for simple mode (default: 'claude-sonnet')
-  --model-planning <name>  Model override for planning phase in plan-execute mode (default: 'claude-sonnet')
-  --model-execution <name> Model override for execution phase in plan-execute mode (default: 'gemini-flash')
-  --base-url <url>         LiteLLM proxy endpoint (default: 'http://localhost:4000')
-  --master-key <key>       LiteLLM master/admin API key (default: env LITELLM_API_KEY or 'sk-9999')
-  --delay <ms>             Delay in ms before querying LiteLLM spend APIs after runs (default: 10000)
+  --model <name>           Model override for simple mode (env: TOKENOMICS_MODEL or test-plan.json)
+  --model-planning <name>  Model override for planning phase in plan-execute mode (env: TOKENOMICS_MODEL_PLANNING or test-plan.json)
+  --model-execution <name> Model override for execution phase in plan-execute mode (env: TOKENOMICS_MODEL_EXECUTION or test-plan.json)
+  --base-url <url>         LiteLLM proxy endpoint (default: '${defaults.baseUrl}')
+  --master-key <key>       LiteLLM master/admin API key (env: LITELLM_MASTER_KEY)
+  --delay <ms>             Delay in ms before querying LiteLLM spend APIs after runs (default: ${defaults.delay})
   --help, -h               Show this help message
-
-Models available in LiteLLM:
-  - claude-sonnet
-  - gemini-flash
-  - gemini-pro
 `);
 }
 
@@ -249,5 +256,52 @@ export function resolveCaseOptions(caseInput, globalOptions, testPlan) {
   }
 
   resolved.case = caseName;
+  validateCaseOptions(resolved);
   return resolved;
 }
+
+/**
+ * Validates that all required configuration settings are provided for a test run.
+ * Fails fast with clear actionable error messages if any required variable is missing.
+ * @param {object} options - Resolved case options
+ */
+export function validateCaseOptions(options) {
+  const caseName = options.case || 'default';
+
+  if (!options.masterKey) {
+    console.error(`❌ Configuration Error: LiteLLM master API key is missing.`);
+    console.error(`Please provide it by setting LITELLM_MASTER_KEY in your .env or environment variables, or pass the --master-key flag.`);
+    process.exit(1);
+  }
+
+  const isInteractive = Boolean(options.interactive);
+  const mode = options.mode || 'simple';
+
+  if (!isInteractive) {
+    if (mode === 'plan-execute') {
+      if (!options.modelPlanning) {
+        console.error(`❌ Configuration Error: Planning model for test case "${caseName}" (plan-execute mode) is missing.`);
+        console.error(`Please provide it by setting TOKENOMICS_MODEL_PLANNING in your .env or environment variables, specifying "modelPlanning" in your test plan, or passing the --model-planning flag.`);
+        process.exit(1);
+      }
+      if (!options.modelExecution) {
+        console.error(`❌ Configuration Error: Execution model for test case "${caseName}" (plan-execute mode) is missing.`);
+        console.error(`Please provide it by setting TOKENOMICS_MODEL_EXECUTION in your .env or environment variables, specifying "modelExecution" in your test plan, or passing the --model-execution flag.`);
+        process.exit(1);
+      }
+    } else {
+      if (!options.model) {
+        console.error(`❌ Configuration Error: Model for test case "${caseName}" (simple mode) is missing.`);
+        console.error(`Please provide it by setting TOKENOMICS_MODEL in your .env or environment variables, specifying "model" in your test plan, or passing the --model flag.`);
+        process.exit(1);
+      }
+    }
+  }
+
+  if (options.evaluation && !options.evalModel) {
+    console.error(`❌ Configuration Error: Evaluation model is missing.`);
+    console.error(`Please provide it by setting TOKENOMICS_EVAL_MODEL in your .env or environment variables, or pass the --eval-model flag (or disable evaluation with --no-eval).`);
+    process.exit(1);
+  }
+}
+

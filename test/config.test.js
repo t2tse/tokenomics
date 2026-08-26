@@ -196,6 +196,150 @@ describe('config module', () => {
     assert.equal(opts.modelPlanning, 'claude-sonnet-4-6');
     assert.equal(opts.modelExecution, 'gpt-5.6-terra');
   });
+
+  it('should resolve environment variables for defaults', () => {
+    assert.ok(defaults.baseUrl);
+    assert.equal(typeof defaults.delay, 'number');
+    assert.equal(typeof defaults.evaluation, 'boolean');
+  });
+
+  it('validateCaseOptions should fail if masterKey is missing', async () => {
+    const { validateCaseOptions } = await import('../src/config.js');
+    const originalExit = process.exit;
+    let exitCode = null;
+    let errLogs = [];
+    const origError = console.error;
+    console.error = (...args) => errLogs.push(args.join(' '));
+    process.exit = (code) => {
+      exitCode = code;
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      assert.throws(() => {
+        validateCaseOptions({
+          case: 'test-case',
+          masterKey: null,
+          mode: 'simple',
+          model: 'claude-sonnet',
+          evaluation: false,
+        });
+      }, /process\.exit:1/);
+      assert.equal(exitCode, 1);
+      assert.ok(errLogs.some((l) => l.includes('LiteLLM master API key is missing')));
+    } finally {
+      process.exit = originalExit;
+      console.error = origError;
+    }
+  });
+
+  it('validateCaseOptions should fail if model is missing in simple mode', async () => {
+    const { validateCaseOptions } = await import('../src/config.js');
+    const originalExit = process.exit;
+    let exitCode = null;
+    let errLogs = [];
+    const origError = console.error;
+    console.error = (...args) => errLogs.push(args.join(' '));
+    process.exit = (code) => {
+      exitCode = code;
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      assert.throws(() => {
+        validateCaseOptions({
+          case: 'my-simple-case',
+          masterKey: 'sk-test',
+          mode: 'simple',
+          model: null,
+          evaluation: false,
+        });
+      }, /process\.exit:1/);
+      assert.equal(exitCode, 1);
+      assert.ok(errLogs.some((l) => l.includes('Model for test case "my-simple-case" (simple mode) is missing')));
+    } finally {
+      process.exit = originalExit;
+      console.error = origError;
+    }
+  });
+
+  it('validateCaseOptions should fail if modelPlanning or modelExecution is missing in plan-execute mode', async () => {
+    const { validateCaseOptions } = await import('../src/config.js');
+    const originalExit = process.exit;
+    let exitCode = null;
+    let errLogs = [];
+    const origError = console.error;
+    console.error = (...args) => errLogs.push(args.join(' '));
+    process.exit = (code) => {
+      exitCode = code;
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      assert.throws(() => {
+        validateCaseOptions({
+          case: 'my-plan-case',
+          masterKey: 'sk-test',
+          mode: 'plan-execute',
+          modelPlanning: null,
+          modelExecution: 'gemini-flash',
+          evaluation: false,
+        });
+      }, /process\.exit:1/);
+      assert.equal(exitCode, 1);
+      assert.ok(errLogs.some((l) => l.includes('Planning model for test case "my-plan-case" (plan-execute mode) is missing')));
+
+      errLogs = [];
+      assert.throws(() => {
+        validateCaseOptions({
+          case: 'my-plan-case',
+          masterKey: 'sk-test',
+          mode: 'plan-execute',
+          modelPlanning: 'claude-sonnet',
+          modelExecution: null,
+          evaluation: false,
+        });
+      }, /process\.exit:1/);
+      assert.equal(exitCode, 1);
+      assert.ok(errLogs.some((l) => l.includes('Execution model for test case "my-plan-case" (plan-execute mode) is missing')));
+    } finally {
+      process.exit = originalExit;
+      console.error = origError;
+    }
+  });
+
+  it('validateCaseOptions should fail if evalModel is missing when evaluation is true', async () => {
+    const { validateCaseOptions } = await import('../src/config.js');
+    const originalExit = process.exit;
+    let exitCode = null;
+    let errLogs = [];
+    const origError = console.error;
+    console.error = (...args) => errLogs.push(args.join(' '));
+    process.exit = (code) => {
+      exitCode = code;
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      assert.throws(() => {
+        validateCaseOptions({
+          case: 'my-eval-case',
+          masterKey: 'sk-test',
+          mode: 'simple',
+          model: 'claude-sonnet',
+          evaluation: true,
+          evalModel: null,
+        });
+      }, /process\.exit:1/);
+      assert.equal(exitCode, 1);
+      assert.ok(errLogs.some((l) => l.includes('Evaluation model is missing')));
+    } finally {
+      process.exit = originalExit;
+      console.error = origError;
+    }
+  });
 });
+
+
 
 

@@ -18,6 +18,18 @@ const parentDir = path.resolve(__dirname, '..');
  * @param {string} [baseDir=parentDir] - Root project directory
  */
 export async function runStandaloneEvaluations(options, baseDir = parentDir) {
+  if (!options.masterKey) {
+    console.error(`❌ Configuration Error: LiteLLM master API key is missing.`);
+    console.error(`Please provide it by setting LITELLM_MASTER_KEY in your .env or environment variables, or pass the --master-key flag.`);
+    process.exit(1);
+  }
+
+  if (!options.evalModel) {
+    console.error(`❌ Configuration Error: Evaluation model is missing.`);
+    console.error(`Please provide it by setting TOKENOMICS_EVAL_MODEL in your .env or environment variables, or pass the --eval-model flag.`);
+    process.exit(1);
+  }
+
   const useCasesDir = path.join(baseDir, 'use-cases');
   if (!fs.existsSync(useCasesDir)) {
     console.error(`❌ Error: use-cases directory not found at ${useCasesDir}`);

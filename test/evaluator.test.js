@@ -202,6 +202,7 @@ describe('evaluator module', () => {
         evaluate: true,
         reEvaluate: false,
         baseUrl: 'http://127.0.0.1:4000',
+        masterKey: 'sk-test',
         evalModel: 'gemini-pro',
       }, tmpDir);
       assert.ok(logs.some((l) => l.includes('already evaluated: 88/100')));
@@ -210,4 +211,37 @@ describe('evaluator module', () => {
       fs.rmSync(tmpDir, { recursive: true, force: true });
     }
   });
+
+  it('runStandaloneEvaluations fails if masterKey or evalModel is missing', async () => {
+    const { runStandaloneEvaluations } = await import('../src/main.js');
+    const originalExit = process.exit;
+    let exitCode = null;
+    process.exit = (code) => {
+      exitCode = code;
+      throw new Error(`process.exit:${code}`);
+    };
+
+    try {
+      // Missing masterKey
+      await assert.rejects(async () => {
+        await runStandaloneEvaluations({
+          case: 'sample-case',
+          masterKey: null,
+          evalModel: 'gemini-pro',
+        });
+      }, /process\.exit:1/);
+
+      // Missing evalModel
+      await assert.rejects(async () => {
+        await runStandaloneEvaluations({
+          case: 'sample-case',
+          masterKey: 'sk-test',
+          evalModel: null,
+        });
+      }, /process\.exit:1/);
+    } finally {
+      process.exit = originalExit;
+    }
+  });
 });
+
