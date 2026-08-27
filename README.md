@@ -24,11 +24,71 @@ Google Cloud Agent Platform formerly known as Vertex AI. Specific model version 
 
 ## 🛠️ System Requirements & Setup
 
-Before running the test harness, ensure you have the following prerequisites installed and active on your system:
+Follow these steps to set up a brand new environment from scratch:
 
-1.  **Node.js**: v18.0.0 or higher (fully compatible with v24.16.0)
-2.  **LiteLLM Proxy**: Active and running locally on port `4000`
-3.  **Coding Agent**: Globally installed coding agent executable (Currently only supports `claude` Claude Code CLI)
+### 1. Prerequisites Installation
+- **Docker**: Needed to run the PostgreSQL / AlloyDB Omni database container.
+- **Node.js (v18+)**: Needed for `tokbench` and Claude Code CLI.
+- **Astral uv**: Needed for running LiteLLM. Install via:
+  ```bash
+  curl -LsSf https://astral.sh/uv/install.sh | sh
+  source $HOME/.cargo/env # or restart your terminal
+  ```
+- **Coding Agent (Claude Code)**:
+  ```bash
+  npm install -g @anthropic-ai/claude-code
+  ```
+- **Google Cloud SDK**:
+  Ensure you have logged in and configured Application Default Credentials (ADC) for Vertex AI access:
+  ```bash
+  gcloud auth login
+  gcloud auth application-default login
+  ```
+
+---
+
+### 2. LiteLLM Proxy & Database Setup
+Navigate to the `litellm/` directory to configure and start LiteLLM:
+
+1. **Start AlloyDB Omni Database Container**:
+   ```bash
+   chmod +x litellm/*.sh
+   ./litellm/install-alloydb-omni.sh
+   ```
+2. **Configure GCP Project & Models**:
+   ```bash
+   cp litellm/config.yaml.example litellm/config.yaml
+   # Edit litellm/config.yaml and set your GCP Project ID
+   ```
+3. **Install LiteLLM & Synchronize Prisma Database Schema**:
+   ```bash
+   ./litellm/install-litellm.sh
+   ```
+4. **Start LiteLLM Proxy**:
+   ```bash
+   ./litellm/start-litellm.sh
+   ```
+   *(Keep this terminal running or run in the background).*
+
+---
+
+### 3. Tokbench Setup & Execution
+In another terminal, configure the tokenomics test harness:
+
+1. **Install Dependencies & Build CLI**:
+   ```bash
+   npm install
+   npm run build
+   ```
+2. **Configure Environment**:
+   ```bash
+   cp .env.example .env
+   # Verify LITELLM_BASE_URL and LITELLM_MASTER_KEY
+   ```
+3. **Run Benchmark**:
+   ```bash
+   ./bin/tokbench --config test-plan-say-hello.json.example
+   ```
 
 ---
 

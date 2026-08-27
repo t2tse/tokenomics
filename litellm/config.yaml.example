@@ -1,0 +1,106 @@
+# =====================================================================
+# LiteLLM Configuration File for Tokenomics Test Harness
+# =====================================================================
+
+model_list:
+  # -------------------------------------------------------------------
+  # Anthropic Claude Models on Vertex AI (Google Cloud)
+  # -------------------------------------------------------------------
+
+  # Claude Opus (latest)
+  - model_name: claude-opus
+    litellm_params:
+      model: vertex_ai/claude-opus-5
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Claude Opus 5
+  - model_name: claude-opus-5
+    litellm_params:
+      model: vertex_ai/claude-opus-5
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Claude Opus 4.8
+  - model_name: claude-opus-4-8
+    litellm_params:
+      model: vertex_ai/claude-opus-4-8
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Claude Sonnet (latest)
+  - model_name: claude-sonnet
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Claude Sonnet 5
+  - model_name: claude-sonnet-5
+    litellm_params:
+      model: vertex_ai/claude-sonnet-5
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"      
+
+  # Claude Sonnet 4.6
+  - model_name: claude-sonnet-4-6
+    litellm_params:
+      model: vertex_ai/claude-sonnet-4-6
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # -------------------------------------------------------------------
+  # Google Gemini Models on Vertex AI (Google Cloud)
+  # -------------------------------------------------------------------
+
+  # Gemini Pro (latest)
+  - model_name: gemini-pro
+    litellm_params:
+      model: vertex_ai/gemini-3.1-pro-preview
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Gemini 3.1 Pro preview
+  - model_name: gemini-3.1-pro-preview
+    litellm_params:
+      model: vertex_ai/gemini-3.1-pro-preview
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Gemini Flash (latest)
+  - model_name: gemini-flash
+    litellm_params:
+      model: vertex_ai/gemini-3.7-flash
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Gemini 3.7 Flash
+  - model_name: gemini-3.7-flash
+    litellm_params:
+      model: vertex_ai/gemini-3.7-flash
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Gemini 3.6 Flash
+  - model_name: gemini-3.6-flash
+    litellm_params:
+      model: vertex_ai/gemini-3.6-flash
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+  # Gemini 3.5 Flash
+  - model_name: gemini-3.5-flash
+    litellm_params:
+      model: vertex_ai/gemini-3.5-flash
+      vertex_project: "YOUR_GCP_PROJECT_ID"
+      vertex_location: "global"
+
+# =====================================================================
+# LiteLLM Proxy Settings & Database Connection
+# =====================================================================
+litellm_settings:
+  drop_params: true
+  
+general_settings: 
+  master_key: sk-1111
+  database_url: "postgresql://postgres:pg1234@localhost:5432/litellm"
