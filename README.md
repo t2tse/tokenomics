@@ -39,7 +39,7 @@ Follow these steps to set up a brand new environment from scratch:
   npm install -g @anthropic-ai/claude-code
   ```
 - **Google Cloud SDK**:
-  Ensure you have logged in and configured Application Default Credentials (ADC) for Vertex AI access:
+  Ensure you have logged in and configured Application Default Credentials (ADC) for Agent Platform access:
   ```bash
   gcloud auth login
   gcloud auth application-default login

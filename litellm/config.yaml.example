@@ -4,7 +4,7 @@
 
 model_list:
   # -------------------------------------------------------------------
-  # Anthropic Claude Models on Vertex AI (Google Cloud)
+  # Anthropic Claude Models on Agent Platform (Google Cloud)
   # -------------------------------------------------------------------
 
   # Claude Opus (latest)
@@ -50,7 +50,7 @@ model_list:
       vertex_location: "global"
 
   # -------------------------------------------------------------------
-  # Google Gemini Models on Vertex AI (Google Cloud)
+  # Google Gemini Models on Agent Platform (Google Cloud)
   # -------------------------------------------------------------------
 
   # Gemini Pro (latest)

@@ -48,7 +48,7 @@ Send a sample completion request:
 ## 📁 Files Overview
 
 - **`install-alloydb-omni.sh`**: Provisions the local Docker database container `my-omni` and verifies health.
-- **`config.yaml.example`**: LiteLLM configuration mapping model names to Vertex AI Claude and Gemini endpoints.
+- **`config.yaml.example`**: LiteLLM configuration mapping model names to Agent Platform Claude and Gemini endpoints.
 - **`install-litellm.sh`**: Installs LiteLLM via `uv tool`, generates Prisma client, and runs `prisma db push`.
 - **`start-litellm.sh`**: Starts the database container (if not running) and launches the LiteLLM proxy server.
 - **`test-litellm.sh`**: Verifies proxy and model routing via a test curl request.
