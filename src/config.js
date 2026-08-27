@@ -51,7 +51,7 @@ Runs software development tasks through Claude Code CLI or other registered agen
 using a local LiteLLM proxy, tracking detailed token usage, API request count, duration, and financial cost.
 
 Usage:
-  tokenomics [options] (or ./bin/tokenomics [options])
+  tokbench [options] (or ./bin/tokbench [options])
 
 Options:
   --agent <name>           Coding agent engine to run (default: '${DEFAULT_AGENT}')

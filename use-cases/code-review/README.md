@@ -42,9 +42,9 @@ Running [`test-setup.sh`](./test-setup.sh) initializes the benchmark environment
   ```
 - **Execute Test Case (Plan-Execute Mode)**:
   ```bash
-  ./bin/tokenomics --case code-review --mode plan-execute --model-planning claude-sonnet --model-execution gemini-flash
+  ./bin/tokbench --case code-review --mode plan-execute --model-planning claude-sonnet --model-execution gemini-flash
   ```
 - **Run in Interactive Mode**:
   ```bash
-  ./bin/tokenomics --case code-review --interactive
+  ./bin/tokbench --case code-review --interactive
   ```

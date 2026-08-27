@@ -44,11 +44,11 @@ Running [`test-setup.sh`](./test-setup.sh) performs the following automated step
   ```
 - **Execute Test Case (Plan-Execute Mode)**:
   ```bash
-  ./bin/tokenomics --case one-to-two-feature-request --mode plan-execute --model-planning claude-sonnet --model-execution gemini-flash
+  ./bin/tokbench --case one-to-two-feature-request --mode plan-execute --model-planning claude-sonnet --model-execution gemini-flash
   ```
 - **Run in Interactive Mode**:
   ```bash
-  ./bin/tokenomics --case one-to-two-feature-request --interactive
+  ./bin/tokbench --case one-to-two-feature-request --interactive
   ```
 - **Local Port-forwarding to the Web Application**:
   ```bash

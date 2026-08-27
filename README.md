@@ -119,14 +119,14 @@ Launches an interactive session allowing direct user prompting while maintaining
 
 ## 💻 CLI Usage Guide
 
-The harness is fully configurable using command-line arguments or a test plan JSON file, and can be invoked directly as a standalone CLI executable (`tokenomics` or `./bin/tokenomics`):
+The harness is fully configurable using command-line arguments or a test plan JSON file, and can be invoked directly as a standalone CLI executable (`tokbench` or `./bin/tokbench`):
 
 ```bash
-# Build/bundle src/ into the standalone executable bin/tokenomics
+# Build/bundle src/ into the standalone executable bin/tokbench
 npm run build
 
 # Directly run standalone CLI executable
-./bin/tokenomics [options]
+./bin/tokbench [options]
 ```
 
 ### Execution Modes & Rules
@@ -172,13 +172,13 @@ To ensure each successful test run truly accomplished what it was asked in the p
 You can evaluate historical successful test runs at any time without re-executing agents:
 ```bash
 # 1. Evaluate un-evaluated successful historical runs (skips already evaluated runs)
-./bin/tokenomics --evaluate
+./bin/tokbench --evaluate
 
 # 2. Force re-evaluation of all successful runs (re-scores already evaluated runs)
-./bin/tokenomics --re-evaluate
+./bin/tokbench --re-evaluate
 
 # 3. Re-evaluate a specific case with a custom judge model
-./bin/tokenomics --re-evaluate --case one-to-two-feature-request --eval-model claude-sonnet
+./bin/tokbench --re-evaluate --case one-to-two-feature-request --eval-model claude-sonnet
 ```
 
 ### Headless vs Interactive Execution
@@ -223,19 +223,19 @@ When running across all use cases, the harness reads `test-plan.json` to assign 
 
 ```bash
 # 1. Run all use cases using the default root test-plan.json
-./bin/tokenomics
+./bin/tokbench
 
 # 2. Run all use cases using a custom test plan configuration file
-./bin/tokenomics --config custom-plan.json
+./bin/tokbench --config custom-plan.json
 
 # 3. Run a single case in Simple mode with Gemini Flash
-./bin/tokenomics --case zero-to-one-vibe-coding --mode simple --model gemini-flash
+./bin/tokbench --case zero-to-one-vibe-coding --mode simple --model gemini-flash
 
 # 4. Run a single case in Plan-Execute mode with custom planning & execution models
-./bin/tokenomics --case one-to-two-feature-request --mode plan-execute --model-planning claude-opus --model-execution gemini-flash
+./bin/tokbench --case one-to-two-feature-request --mode plan-execute --model-planning claude-opus --model-execution gemini-flash
 
 # 5. Run a test case in interactive mode
-./bin/tokenomics --case legacy-modernization --interactive
+./bin/tokbench --case legacy-modernization --interactive
 ```
 
 ---
@@ -260,7 +260,7 @@ The harness includes a local web page dashboard [`REPORT.html`](REPORT.html) to 
    npm run report
    # then open http://localhost:8080/REPORT.html
    ```
-2. **Auto-Manifest Generation**: Running benchmark tests via `tokenomics` automatically updates `reports-manifest.json`. You can also manually re-scan `use-cases/` and rebuild the manifest anytime:
+2. **Auto-Manifest Generation**: Running benchmark tests via `tokbench` automatically updates `reports-manifest.json`. You can also manually re-scan `use-cases/` and rebuild the manifest anytime:
    ```bash
    npm run report:manifest
    ```
@@ -275,7 +275,7 @@ The repository contains the standalone binary, modular source files, package con
 ```
 tokenomics/
 ├── bin/
-│   └── tokenomics                  <-- Bundled standalone CLI executable (built via esbuild)
+│   └── tokbench                    <-- Bundled standalone CLI executable (built via esbuild)
 ├── REPORT.html                      <-- Local web dashboard UI for viewing reports & artifacts
 ├── reports-manifest.json            <-- Auto-generated manifest index for REPORT.html (.gitignored)
 ├── package.json                     <-- Node.js package manifest and scripts
@@ -315,7 +315,7 @@ tokenomics/
     └── code-review/                 <-- Use Case: Automated code inspection and review
 ```
 
-* **`bin/tokenomics`**: Bundled executable generated via `npm run build` using `esbuild`.
+* **`bin/tokbench`**: Bundled executable generated via `npm run build` using `esbuild`.
 * **`REPORT.html`**: Interactive local web page dashboard for reviewing test results and viewing `AGENT-*` artifacts.
 * **`src/`**: Source code of this Coding Agent Test Harness.
 * **`test/`**: Unit test suite executable via `npm run test:unit`.

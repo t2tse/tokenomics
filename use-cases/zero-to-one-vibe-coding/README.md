@@ -16,9 +16,9 @@ The prompt definitions and functional requirements stored in [`PROMPT.md`](./PRO
 
 - **Execute Test Case (Simple Mode)**:
   ```bash
-  ./bin/tokenomics --case zero-to-one-vibe-coding --mode simple --model claude-sonnet
+  ./bin/tokbench --case zero-to-one-vibe-coding --mode simple --model claude-sonnet
   ```
 - **Run in Interactive Mode**:
   ```bash
-  ./bin/tokenomics --case zero-to-one-vibe-coding --interactive
+  ./bin/tokbench --case zero-to-one-vibe-coding --interactive
   ```
